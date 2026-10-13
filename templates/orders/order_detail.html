@@ -1,0 +1,1712 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+{{ order.order_number }} | OrderPilot
+{% endblock %}
+
+
+{% block page_heading %}
+{{ order.order_number }}
+{% endblock %}
+
+
+{% block page_subheading %}
+Order details and payment summary.
+{% endblock %}
+
+
+{% block content %}
+
+
+<style>
+
+    /* =====================================================
+       ORDER DETAIL
+    ===================================================== */
+
+    .op-section-gap {
+        height: 18px;
+    }
+
+
+    /* =====================================================
+       ACTION BODY
+    ===================================================== */
+
+    .op-action-body {
+        padding: 20px 22px 22px;
+    }
+
+
+    /* =====================================================
+       STATUS FORM
+    ===================================================== */
+
+    .op-status-form {
+        display: grid;
+
+        grid-template-columns:
+            minmax(220px, 0.9fr)
+            minmax(300px, 1.8fr)
+            auto;
+
+        gap: 14px;
+
+        align-items: end;
+    }
+
+
+    .op-status-field {
+        min-width: 0;
+    }
+
+
+    .op-status-action {
+        display: flex;
+        align-items: flex-end;
+    }
+
+
+    .op-status-action .btn {
+        min-height: 42px;
+
+        padding-left: 17px;
+        padding-right: 17px;
+
+        white-space: nowrap;
+    }
+
+
+    /* =====================================================
+       PAYMENT FORM
+    ===================================================== */
+
+    .op-payment-form {
+        display: grid;
+
+        grid-template-columns:
+            minmax(150px, 0.8fr)
+            minmax(170px, 0.9fr)
+            minmax(190px, 1.05fr)
+            minmax(220px, 1.25fr)
+            auto;
+
+        gap: 14px;
+
+        align-items: start;
+    }
+
+
+    .op-payment-field {
+        min-width: 0;
+    }
+
+
+    .op-payment-field .form-control {
+        width: 100%;
+        max-width: 100%;
+    }
+
+
+    .op-payment-help {
+        min-height: 17px;
+
+        margin-top: 6px;
+
+        color: var(--text-secondary);
+
+        font-size: 11px;
+    }
+
+
+    .op-payment-action {
+        display: flex;
+        align-items: flex-start;
+
+        padding-top: 26px;
+    }
+
+
+    .op-payment-action .btn {
+        min-height: 42px;
+
+        padding-left: 17px;
+        padding-right: 17px;
+
+        white-space: nowrap;
+    }
+
+
+    /* =====================================================
+       COMPLETE / FINAL STATE
+    ===================================================== */
+
+    .op-complete-state {
+        display: flex;
+        align-items: center;
+
+        gap: 12px;
+
+        min-height: 72px;
+
+        padding: 16px;
+
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+
+        background: var(--surface-secondary);
+    }
+
+
+    .op-complete-state p {
+        margin: 0;
+
+        color: var(--text-secondary);
+
+        font-size: 12px;
+    }
+
+
+    /* =====================================================
+       OVERFLOW-SAFE TABLE PANEL
+    ===================================================== */
+
+    .op-table-panel {
+        overflow: hidden;
+    }
+
+
+    .op-table-wrapper {
+        width: 100%;
+        max-width: 100%;
+
+        overflow-x: auto;
+        overflow-y: hidden;
+
+        border: 0 !important;
+        border-radius: 0 !important;
+
+        background: transparent;
+    }
+
+
+    .op-table-wrapper .data-table {
+        width: 100%;
+        min-width: 100%;
+
+        border-collapse: collapse;
+
+        table-layout: fixed;
+    }
+
+
+    .op-table-wrapper .data-table th,
+    .op-table-wrapper .data-table td {
+        min-width: 0;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        white-space: nowrap;
+    }
+
+
+    .op-table-wrapper .data-table th:first-child,
+    .op-table-wrapper .data-table td:first-child {
+        padding-left: 22px;
+    }
+
+
+    .op-table-wrapper .data-table th:last-child,
+    .op-table-wrapper .data-table td:last-child {
+        padding-right: 22px;
+    }
+
+
+    /*
+       Important:
+       Existing app.css adds hover to <tr>.
+       We move it to the cells so the parent
+       panel clips everything correctly.
+    */
+
+    .op-table-wrapper .data-table tbody tr {
+        background: transparent;
+    }
+
+
+    .op-table-wrapper .data-table tbody tr:hover {
+        background: transparent;
+    }
+
+
+    .op-table-wrapper .data-table tbody tr:hover td {
+        background: var(--surface-secondary);
+    }
+
+
+    .op-table-wrapper .data-table tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+
+    /* =====================================================
+       PAYMENT HISTORY WIDTHS
+    ===================================================== */
+
+    .op-payment-history th:nth-child(1),
+    .op-payment-history td:nth-child(1) {
+        width: 14%;
+    }
+
+
+    .op-payment-history th:nth-child(2),
+    .op-payment-history td:nth-child(2) {
+        width: 17%;
+    }
+
+
+    .op-payment-history th:nth-child(3),
+    .op-payment-history td:nth-child(3) {
+        width: 19%;
+    }
+
+
+    .op-payment-history th:nth-child(4),
+    .op-payment-history td:nth-child(4) {
+        width: 17%;
+    }
+
+
+    .op-payment-history th:nth-child(5),
+    .op-payment-history td:nth-child(5) {
+        width: 18%;
+    }
+
+
+    .op-payment-history th:nth-child(6),
+    .op-payment-history td:nth-child(6) {
+        width: 15%;
+    }
+
+
+    /* =====================================================
+       ORDER ITEMS WIDTHS
+    ===================================================== */
+
+    .op-order-items th:nth-child(1),
+    .op-order-items td:nth-child(1) {
+        width: 34%;
+    }
+
+
+    .op-order-items th:nth-child(2),
+    .op-order-items td:nth-child(2) {
+        width: 22%;
+    }
+
+
+    .op-order-items th:nth-child(3),
+    .op-order-items td:nth-child(3) {
+        width: 12%;
+    }
+
+
+    .op-order-items th:nth-child(4),
+    .op-order-items td:nth-child(4) {
+        width: 16%;
+    }
+
+
+    .op-order-items th:nth-child(5),
+    .op-order-items td:nth-child(5) {
+        width: 16%;
+    }
+
+
+    /* =====================================================
+       STATUS HISTORY WIDTHS
+    ===================================================== */
+
+    .op-status-history th:nth-child(1),
+    .op-status-history td:nth-child(1) {
+        width: 14%;
+    }
+
+
+    .op-status-history th:nth-child(2),
+    .op-status-history td:nth-child(2) {
+        width: 16%;
+    }
+
+
+    .op-status-history th:nth-child(3),
+    .op-status-history td:nth-child(3) {
+        width: 18%;
+    }
+
+
+    .op-status-history th:nth-child(4),
+    .op-status-history td:nth-child(4) {
+        width: 31%;
+    }
+
+
+    .op-status-history th:nth-child(5),
+    .op-status-history td:nth-child(5) {
+        width: 21%;
+    }
+
+
+    /* =====================================================
+       EMPTY TABLE
+    ===================================================== */
+
+    .op-table-empty {
+        padding-top: 18px !important;
+        padding-bottom: 18px !important;
+
+        color: var(--text-secondary);
+    }
+
+
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+
+    @media (max-width: 1250px) {
+
+        .op-payment-form {
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+        }
+
+
+        .op-payment-action {
+            grid-column: 1 / -1;
+
+            justify-content: flex-end;
+
+            padding-top: 0;
+        }
+
+    }
+
+
+    @media (max-width: 900px) {
+
+        .op-status-form {
+            grid-template-columns:
+                1fr 1.4fr;
+        }
+
+
+        .op-status-action {
+            grid-column: 1 / -1;
+
+            justify-content: flex-end;
+        }
+
+
+        .op-table-wrapper .data-table {
+            min-width: 760px;
+
+            table-layout: auto;
+        }
+
+    }
+
+
+    @media (max-width: 700px) {
+
+        .op-action-body {
+            padding: 18px;
+        }
+
+
+        .op-status-form,
+        .op-payment-form {
+            grid-template-columns: 1fr;
+        }
+
+
+        .op-status-action,
+        .op-payment-action {
+            grid-column: auto;
+
+            padding-top: 0;
+        }
+
+
+        .op-status-action .btn,
+        .op-payment-action .btn {
+            width: 100%;
+        }
+
+
+        .op-complete-state {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+    }
+
+    /* =====================================================
+   COURIER + COD SETTLEMENT
+===================================================== */
+
+.op-courier-form {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 16px;
+}
+
+
+.op-courier-field {
+    min-width: 0;
+}
+
+
+.op-courier-field-wide {
+    grid-column: span 2;
+}
+
+
+.op-courier-footer {
+    grid-column: 1 / -1;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 18px;
+
+    margin-top: 4px;
+}
+
+
+.op-courier-summary {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    min-width: 0;
+}
+
+
+.op-courier-summary-text {
+    color: var(--text-secondary);
+
+    font-size: 12px;
+}
+
+
+.op-courier-summary-text strong {
+    color: var(--text-primary);
+}
+
+
+.op-courier-action {
+    flex: 0 0 auto;
+}
+
+
+.op-courier-action .btn {
+    min-height: 42px;
+}
+
+
+.op-settlement-badge {
+    display: inline-flex;
+    align-items: center;
+
+    min-height: 26px;
+
+    padding: 4px 10px;
+
+    border-radius: 999px;
+
+    font-size: 11px;
+    font-weight: 700;
+}
+
+
+.op-settlement-pending {
+    background:
+        rgba(245, 158, 11, 0.12);
+
+    color: #d97706;
+}
+
+
+.op-settlement-partial {
+    background:
+        rgba(59, 130, 246, 0.12);
+
+    color: #2563eb;
+}
+
+
+.op-settlement-settled {
+    background:
+        rgba(22, 163, 74, 0.12);
+
+    color: #16a34a;
+}
+
+
+@media (max-width: 1100px) {
+
+    .op-courier-form {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+}
+
+
+@media (max-width: 700px) {
+
+    .op-courier-form {
+        grid-template-columns: 1fr;
+    }
+
+
+    .op-courier-field-wide {
+        grid-column: auto;
+    }
+
+
+    .op-courier-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+
+    .op-courier-action .btn {
+        width: 100%;
+    }
+
+}
+
+</style>
+
+
+
+{# ===================================================== #}
+{# MESSAGES                                              #}
+{# ===================================================== #}
+
+{% if messages %}
+
+    {% for message in messages %}
+
+        <div
+            class="
+                alert
+                {% if message.tags == 'error' %}
+                    alert-danger
+                {% elif message.tags %}
+                    alert-{{ message.tags }}
+                {% endif %}
+            "
+        >
+            {{ message }}
+        </div>
+
+    {% endfor %}
+
+{% endif %}
+
+
+
+{# ===================================================== #}
+{# BACK                                                  #}
+{# ===================================================== #}
+
+<div class="detail-toolbar">
+
+    <a
+        href="{% url 'orders:list' %}"
+        class="btn btn-ghost"
+    >
+        ← Back to Orders
+    </a>
+
+
+    <div class="detail-actions">
+
+        <a
+            href="{% url 'orders:invoice' order.pk %}"
+            class="btn btn-secondary"
+            target="_blank"
+            rel="noopener"
+        >
+            View Invoice
+        </a>
+
+    </div>
+
+</div>
+
+
+
+{# ===================================================== #}
+{# ORDER INFORMATION                                     #}
+{# ===================================================== #}
+
+<div class="detail-grid">
+
+    <section class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Order Information
+                </h2>
+
+                <p>
+                    Customer and order information.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="detail-list">
+
+            <div class="detail-row">
+
+                <span>
+                    Customer
+                </span>
+
+                <strong>
+                    {{ order.customer.full_name }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Phone
+                </span>
+
+                <strong>
+                    {{ order.customer.phone }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Status
+                </span>
+
+                <strong>
+                    {{ order.get_status_display }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Payment Method
+                </span>
+
+                <strong>
+                    {{ order.get_payment_method_display }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Payment Status
+                </span>
+
+                <strong>
+                    {{ order.get_payment_status_display }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Created
+                </span>
+
+                <strong>
+                    {{ order.created_at|date:"d M Y, h:i A" }}
+                </strong>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    {# ================================================= #}
+    {# PAYMENT SUMMARY                                   #}
+    {# ================================================= #}
+
+    <section class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Payment Summary
+                </h2>
+
+                <p>
+                    Order totals and outstanding balance.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="detail-list">
+
+            <div class="detail-row">
+
+                <span>
+                    Subtotal
+                </span>
+
+                <strong>
+                    ৳{{ order.subtotal }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Discount
+                </span>
+
+                <strong>
+                    ৳{{ order.discount }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Delivery
+                </span>
+
+                <strong>
+                    ৳{{ order.delivery_charge }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Total
+                </span>
+
+                <strong>
+                    ৳{{ order.total_amount }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Paid
+                </span>
+
+                <strong>
+                    ৳{{ order.paid_amount }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Due
+                </span>
+
+                <strong>
+                    ৳{{ order.due_amount }}
+                </strong>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+
+<div class="op-section-gap"></div>
+
+
+
+{# ===================================================== #}
+{# UPDATE STATUS                                         #}
+{# ===================================================== #}
+
+<section class="panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                Update Order Status
+            </h2>
+
+            <p>
+                Move this order through its allowed workflow.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="op-action-body">
+
+        {% if status_choices %}
+
+            <form
+                method="post"
+                action="{% url 'orders:status_update' order.pk %}"
+                class="op-status-form"
+            >
+
+                {% csrf_token %}
+
+
+                <div class="op-status-field">
+
+                    <label
+                        for="status"
+                        class="form-label"
+                    >
+                        New Status
+                    </label>
+
+                    <select
+                        name="status"
+                        id="status"
+                        class="form-control"
+                        required
+                    >
+
+                        <option value="">
+                            Select status
+                        </option>
+
+
+                        {% for value, label in status_choices %}
+
+                            <option value="{{ value }}">
+                                {{ label }}
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <div class="op-status-field">
+
+                    <label
+                        for="note"
+                        class="form-label"
+                    >
+                        Note
+                    </label>
+
+                    <input
+                        type="text"
+                        name="note"
+                        id="note"
+                        class="form-control"
+                        maxlength="255"
+                        placeholder="Optional status note"
+                    >
+
+                </div>
+
+
+                <div class="op-status-action">
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        Update Status
+                    </button>
+
+                </div>
+
+            </form>
+
+        {% else %}
+
+            <div class="op-complete-state">
+
+                <span class="badge badge-neutral">
+                    Final Status
+                </span>
+
+                <p>
+                    No further status changes are available.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</section>
+
+
+
+<div class="op-section-gap"></div>
+
+
+
+{# ===================================================== #}
+{# RECORD PAYMENT                                        #}
+{# ===================================================== #}
+
+<section class="panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                Record Payment
+            </h2>
+
+            <p>
+                Add a new payment against the outstanding balance.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="op-action-body">
+
+        {% if order.due_amount > 0 %}
+
+            <form
+                method="post"
+                action="{% url 'orders:payment_create' order.pk %}"
+                class="op-payment-form"
+            >
+
+                {% csrf_token %}
+
+
+                <div class="op-payment-field">
+
+                    <label
+                        for="{{ payment_form.amount.id_for_label }}"
+                        class="form-label"
+                    >
+                        Amount
+                    </label>
+
+                    {{ payment_form.amount }}
+
+                    <div class="op-payment-help">
+                        Current due: ৳{{ order.due_amount }}
+                    </div>
+
+                </div>
+
+
+                <div class="op-payment-field">
+
+                    <label
+                        for="{{ payment_form.payment_method.id_for_label }}"
+                        class="form-label"
+                    >
+                        Method
+                    </label>
+
+                    {{ payment_form.payment_method }}
+
+                    <div class="op-payment-help">
+                        &nbsp;
+                    </div>
+
+                </div>
+
+
+                <div class="op-payment-field">
+
+                    <label
+                        for="{{ payment_form.reference.id_for_label }}"
+                        class="form-label"
+                    >
+                        Reference
+                    </label>
+
+                    {{ payment_form.reference }}
+
+                    <div class="op-payment-help">
+                        &nbsp;
+                    </div>
+
+                </div>
+
+
+                <div class="op-payment-field">
+
+                    <label
+                        for="{{ payment_form.note.id_for_label }}"
+                        class="form-label"
+                    >
+                        Note
+                    </label>
+
+                    {{ payment_form.note }}
+
+                    <div class="op-payment-help">
+                        &nbsp;
+                    </div>
+
+                </div>
+
+
+                <div class="op-payment-action">
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        Record Payment
+                    </button>
+
+                </div>
+
+            </form>
+
+        {% else %}
+
+            <div class="op-complete-state">
+
+                <span class="badge badge-success">
+                    Paid in Full
+                </span>
+
+                <p>
+                    There is no outstanding balance for this order.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</section>
+
+
+
+<div class="op-section-gap"></div>
+
+
+
+{# ===================================================== #}
+{# PAYMENT HISTORY                                       #}
+{# ===================================================== #}
+
+<section class="panel op-table-panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                Payment History
+            </h2>
+
+            <p>
+                Payments recorded for this order.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="op-table-wrapper">
+
+        <table class="data-table op-payment-history">
+
+            <thead>
+
+                <tr>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th>Reference</th>
+                    <th>Received By</th>
+                    <th>Note</th>
+                    <th>Date</th>
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+                {% for payment in order.payments.all %}
+
+                    <tr>
+
+                        <td>
+                            <strong>
+                                ৳{{ payment.amount }}
+                            </strong>
+                        </td>
+
+                        <td>
+                            {{ payment.get_payment_method_display }}
+                        </td>
+
+                        <td>
+                            {{ payment.reference|default:"—" }}
+                        </td>
+
+                        <td>
+
+                            {% if payment.received_by %}
+                                {{ payment.received_by }}
+                            {% else %}
+                                —
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+                            {{ payment.note|default:"—" }}
+                        </td>
+
+                        <td>
+                            {{ payment.created_at|date:"d M Y, h:i A" }}
+                        </td>
+
+                    </tr>
+
+                {% empty %}
+
+                    <tr>
+
+                        <td
+                            colspan="6"
+                            class="op-table-empty"
+                        >
+                            No payment history available.
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+
+
+
+<div class="op-section-gap"></div>
+
+
+<div class="op-section-gap"></div>
+
+
+{# ===================================================== #}
+{# COURIER + COD SETTLEMENT                              #}
+{# ===================================================== #}
+
+<section class="panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                Courier & COD Settlement
+            </h2>
+
+            <p>
+                Track courier charges, COD collection and settlement.
+            </p>
+
+        </div>
+
+
+        {% if courier_settlement %}
+
+            {% if courier_settlement.settlement_status == "settled" %}
+
+                <span class="op-settlement-badge op-settlement-settled">
+                    Settled
+                </span>
+
+            {% elif courier_settlement.settlement_status == "partial" %}
+
+                <span class="op-settlement-badge op-settlement-partial">
+                    Partial
+                </span>
+
+            {% else %}
+
+                <span class="op-settlement-badge op-settlement-pending">
+                    Pending
+                </span>
+
+            {% endif %}
+
+        {% else %}
+
+            <span class="op-settlement-badge op-settlement-pending">
+                Not Recorded
+            </span>
+
+        {% endif %}
+
+    </div>
+
+
+    <div class="op-action-body">
+
+        <form
+            method="post"
+            action="{% url 'orders:courier_settlement' order.pk %}"
+            class="op-courier-form"
+        >
+
+            {% csrf_token %}
+
+
+            <div class="op-courier-field">
+
+                <label
+                    for="{{ courier_form.courier_name.id_for_label }}"
+                    class="form-label"
+                >
+                    Courier
+                </label>
+
+                {{ courier_form.courier_name }}
+
+            </div>
+
+
+            <div class="op-courier-field">
+
+                <label
+                    for="{{ courier_form.tracking_number.id_for_label }}"
+                    class="form-label"
+                >
+                    Tracking Number
+                </label>
+
+                {{ courier_form.tracking_number }}
+
+            </div>
+
+
+            <div class="op-courier-field">
+
+                <label
+                    for="{{ courier_form.courier_charge.id_for_label }}"
+                    class="form-label"
+                >
+                    Courier Charge
+                </label>
+
+                {{ courier_form.courier_charge }}
+
+            </div>
+
+
+            <div class="op-courier-field">
+
+                <label
+                    for="{{ courier_form.return_charge.id_for_label }}"
+                    class="form-label"
+                >
+                    Return Charge
+                </label>
+
+                {{ courier_form.return_charge }}
+
+            </div>
+
+
+            <div class="op-courier-field">
+
+                <label
+                    for="{{ courier_form.cod_expected.id_for_label }}"
+                    class="form-label"
+                >
+                    COD Expected
+                </label>
+
+                {{ courier_form.cod_expected }}
+
+            </div>
+
+
+            <div class="op-courier-field">
+
+                <label
+                    for="{{ courier_form.cod_received.id_for_label }}"
+                    class="form-label"
+                >
+                    COD Received
+                </label>
+
+                {{ courier_form.cod_received }}
+
+            </div>
+
+
+            <div class="op-courier-field">
+
+                <label
+                    for="{{ courier_form.reference.id_for_label }}"
+                    class="form-label"
+                >
+                    Reference
+                </label>
+
+                {{ courier_form.reference }}
+
+            </div>
+
+
+            <div class="op-courier-field">
+
+                <label
+                    for="{{ courier_form.note.id_for_label }}"
+                    class="form-label"
+                >
+                    Note
+                </label>
+
+                {{ courier_form.note }}
+
+            </div>
+
+
+            <div class="op-courier-footer">
+
+                <div class="op-courier-summary">
+
+                    {% if courier_settlement %}
+
+                        <div class="op-courier-summary-text">
+
+                            Outstanding:
+
+                            <strong>
+                                ৳{{ courier_settlement.outstanding_amount }}
+                            </strong>
+
+
+                            {% if courier_settlement.settled_at %}
+
+                                &nbsp; · &nbsp;
+
+                                Settled:
+
+                                <strong>
+                                    {{ courier_settlement.settled_at|date:"d M Y, h:i A" }}
+                                </strong>
+
+                            {% endif %}
+
+                        </div>
+
+                    {% else %}
+
+                        <div class="op-courier-summary-text">
+                            Settlement has not been recorded yet.
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="op-courier-action">
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        Save Settlement
+                    </button>
+
+                </div>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</section>
+
+<div class="op-section-gap"></div>
+
+{# ===================================================== #}
+{# ORDER ITEMS                                           #}
+{# ===================================================== #}
+
+<section class="panel op-table-panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                Order Items
+            </h2>
+
+            <p>
+                Products included in this order.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="op-table-wrapper">
+
+        <table class="data-table op-order-items">
+
+            <thead>
+
+                <tr>
+                    <th>Product</th>
+                    <th>SKU</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+                {% for item in order.items.all %}
+
+                    <tr>
+
+                        <td>
+                            {{ item.product_name }}
+                        </td>
+
+                        <td>
+                            {{ item.sku|default:"—" }}
+                        </td>
+
+                        <td>
+                            {{ item.quantity }}
+                        </td>
+
+                        <td>
+                            ৳{{ item.unit_price }}
+                        </td>
+
+                        <td>
+                            ৳{{ item.line_total }}
+                        </td>
+
+                    </tr>
+
+                {% empty %}
+
+                    <tr>
+
+                        <td
+                            colspan="5"
+                            class="op-table-empty"
+                        >
+                            No items found.
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+
+
+
+<div class="op-section-gap"></div>
+
+
+
+{# ===================================================== #}
+{# STATUS HISTORY                                        #}
+{# ===================================================== #}
+
+<section class="panel op-table-panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                Status History
+            </h2>
+
+            <p>
+                Order status change history.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="op-table-wrapper">
+
+        <table class="data-table op-status-history">
+
+            <thead>
+
+                <tr>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Changed By</th>
+                    <th>Note</th>
+                    <th>Date</th>
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+                {% for history in order.status_history.all %}
+
+                    <tr>
+
+                        <td>
+
+                            {% if history.from_status %}
+                                {{ history.get_from_status_display }}
+                            {% else %}
+                                —
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+                            {{ history.get_to_status_display }}
+                        </td>
+
+                        <td>
+
+                            {% if history.changed_by %}
+                                {{ history.changed_by }}
+                            {% else %}
+                                —
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+                            {{ history.note|default:"—" }}
+                        </td>
+
+                        <td>
+                            {{ history.created_at|date:"d M Y, h:i A" }}
+                        </td>
+
+                    </tr>
+
+                {% empty %}
+
+                    <tr>
+
+                        <td
+                            colspan="5"
+                            class="op-table-empty"
+                        >
+                            No status history available.
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+
+
+{% endblock %}

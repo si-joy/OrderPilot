@@ -1,0 +1,11 @@
+<div class="alert alert-{{ type|default:'info' }}">
+    <div class="alert-content">
+        {% if title %}
+            <strong class="alert-title">{{ title }}</strong>
+        {% endif %}
+
+        {% if message %}
+            <div class="alert-message">{{ message }}</div>
+        {% endif %}
+    </div>
+</div>

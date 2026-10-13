@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Dashboard | OrderPilot
+{% endblock %}
+
+
+{% block page_heading %}
+Dashboard
+{% endblock %}
+
+
+{% block page_subheading %}
+Overview of your store performance.
+{% endblock %}
+
+
+{% block content %}
+
+
+{# ===================================================== #}
+{# PRIMARY STATS                                         #}
+{# ===================================================== #}
+
+<section class="stats-grid">
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Total Orders
+        </div>
+
+        <div class="stat-value">
+            {{ total_orders }}
+        </div>
+
+        <div class="stat-note">
+            All orders recorded
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Delivered
+        </div>
+
+        <div class="stat-value">
+            {{ delivered_orders }}
+        </div>
+
+        <div class="stat-note">
+            Successfully delivered
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Pending
+        </div>
+
+        <div class="stat-value">
+            {{ pending_orders }}
+        </div>
+
+        <div class="stat-note">
+            Waiting for confirmation
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Returns
+        </div>
+
+        <div class="stat-value">
+            {{ returned_orders }}
+        </div>
+
+        <div class="stat-note">
+            Returned orders
+        </div>
+
+    </div>
+
+</section>
+
+
+
+{# ===================================================== #}
+{# MAIN CONTENT                                          #}
+{# ===================================================== #}
+
+<section class="content-grid">
+
+
+    {# ================================================= #}
+    {# RECENT ORDERS                                     #}
+    {# ================================================= #}
+
+    <div class="panel" style="overflow:hidden;">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Recent Orders
+                </h2>
+
+                <p>
+                    Your latest order activity.
+                </p>
+
+            </div>
+
+
+            <a
+                href="{% url 'orders:list' %}"
+                class="text-link"
+            >
+                View all
+            </a>
+
+        </div>
+
+
+        {% if recent_orders %}
+
+            <div
+                style="
+                    width:100%;
+                    max-width:100%;
+                    overflow-x:auto;
+                    overflow-y:hidden;
+                "
+            >
+
+                <table
+                    class="data-table"
+                    style="
+                        width:100%;
+                        min-width:680px;
+                    "
+                >
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Order
+                            </th>
+
+                            <th>
+                                Customer
+                            </th>
+
+                            <th>
+                                Status
+                            </th>
+
+                            <th>
+                                Total
+                            </th>
+
+                            <th>
+                                Due
+                            </th>
+
+                            <th>
+                                Date
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for order in recent_orders %}
+
+                            <tr>
+
+                                <td>
+
+                                    <a
+                                        href="{% url 'orders:detail' order.pk %}"
+                                        class="table-action"
+                                    >
+                                        {{ order.order_number }}
+                                    </a>
+
+                                </td>
+
+
+                                <td>
+                                    {{ order.customer.full_name }}
+                                </td>
+
+
+                                <td>
+                                    {{ order.get_status_display }}
+                                </td>
+
+
+                                <td>
+                                    ৳{{ order.total_amount }}
+                                </td>
+
+
+                                <td>
+                                    ৳{{ order.due_amount }}
+                                </td>
+
+
+                                <td>
+                                    {{ order.created_at|date:"d M Y" }}
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+        {% else %}
+
+            <div class="empty-state">
+
+                <div class="empty-icon">
+                    ◎
+                </div>
+
+                <h3>
+                    No orders yet
+                </h3>
+
+                <p>
+                    Your recent orders will appear here once you start adding them.
+                </p>
+
+                <a
+                    href="{% url 'orders:create' %}"
+                    class="primary-button"
+                >
+                    Add first order
+                </a>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+
+
+    {# ================================================= #}
+    {# QUICK SUMMARY                                     #}
+    {# ================================================= #}
+
+    <div class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Quick Summary
+                </h2>
+
+                <p>
+                    Business activity overview.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="summary-list">
+
+            <div class="summary-row">
+
+                <span>
+                    Total Customers
+                </span>
+
+                <strong>
+                    {{ total_customers }}
+                </strong>
+
+            </div>
+
+
+            <div class="summary-row">
+
+                <span>
+                    Total Products
+                </span>
+
+                <strong>
+                    {{ total_products }}
+                </strong>
+
+            </div>
+
+
+            <div class="summary-row">
+
+                <span>
+                    COD Pending
+                </span>
+
+                <strong>
+                    ৳{{ cod_pending|floatformat:2 }}
+                </strong>
+
+            </div>
+
+
+            <div class="summary-row">
+
+                <span>
+                    Low Stock Products
+                </span>
+
+                <strong>
+                    {{ low_stock_count }}
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<div style="height:18px;"></div>
+
+
+
+{# ===================================================== #}
+{# FINANCIAL OVERVIEW                                    #}
+{# ===================================================== #}
+
+<section class="stats-grid">
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Completed Sales
+        </div>
+
+        <div class="stat-value">
+            ৳{{ total_sales|floatformat:2 }}
+        </div>
+
+        <div class="stat-note">
+            Delivered order value
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Total Collected
+        </div>
+
+        <div class="stat-value">
+            ৳{{ total_collected|floatformat:2 }}
+        </div>
+
+        <div class="stat-note">
+            Payments recorded
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            COD Receivable
+        </div>
+
+        <div class="stat-value">
+            ৳{{ cod_pending|floatformat:2 }}
+        </div>
+
+        <div class="stat-note">
+            Outstanding COD balance
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Low Stock
+        </div>
+
+        <div class="stat-value">
+            {{ low_stock_count }}
+        </div>
+
+        <div class="stat-note">
+            Products needing attention
+        </div>
+
+    </div>
+
+</section>
+
+
+{% endblock %}

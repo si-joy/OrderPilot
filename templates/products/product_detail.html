@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ product.name }} | OrderPilot
+{% endblock %}
+
+{% block page_heading %}
+{{ product.name }}
+{% endblock %}
+
+{% block page_subheading %}
+Product details, pricing and inventory summary.
+{% endblock %}
+
+
+{% block content %}
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-success">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+
+<div class="detail-toolbar">
+
+    <a
+        href="{% url 'products:list' %}"
+        class="btn btn-ghost"
+    >
+        ← Back to Products
+    </a>
+
+
+    <div class="detail-actions">
+
+        <a
+            href="{% url 'products:update' product.pk %}"
+            class="btn btn-secondary"
+        >
+            Edit Product
+        </a>
+
+
+        {% if product.is_active %}
+
+            <form
+                method="post"
+                action="{% url 'products:archive' product.pk %}"
+                onsubmit="return confirm('Archive this product?');"
+            >
+
+                {% csrf_token %}
+
+                <button
+                    type="submit"
+                    class="btn btn-danger"
+                >
+                    Archive
+                </button>
+
+            </form>
+
+        {% else %}
+
+            <form
+                method="post"
+                action="{% url 'products:restore' product.pk %}"
+            >
+
+                {% csrf_token %}
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    Restore Product
+                </button>
+
+            </form>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<div class="detail-grid">
+
+    <section class="panel">
+
+        <div class="panel-header">
+
+            <div>
+                <h2>Product Information</h2>
+                <p>Basic product and pricing details.</p>
+            </div>
+
+
+            {% if product.is_active %}
+
+                {% include "components/badge.html" with text="Active" type="success" %}
+
+            {% else %}
+
+                {% include "components/badge.html" with text="Archived" type="neutral" %}
+
+            {% endif %}
+
+        </div>
+
+
+        <div class="detail-list">
+
+            <div class="detail-row">
+                <span>Product Name</span>
+                <strong>{{ product.name }}</strong>
+            </div>
+
+            <div class="detail-row">
+                <span>SKU</span>
+                <strong>{{ product.sku|default:"—" }}</strong>
+            </div>
+
+            <div class="detail-row">
+                <span>Selling Price</span>
+                <strong>৳{{ product.selling_price }}</strong>
+            </div>
+
+            <div class="detail-row">
+                <span>Cost Price</span>
+                <strong>৳{{ product.cost_price }}</strong>
+            </div>
+
+            <div class="detail-row">
+                <span>Current Stock</span>
+                <strong>{{ product.stock_quantity }}</strong>
+            </div>
+
+            <div class="detail-row">
+                <span>Low Stock Threshold</span>
+                <strong>{{ product.low_stock_threshold }}</strong>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <section class="panel">
+
+        <div class="panel-header">
+
+            <div>
+                <h2>Inventory Status</h2>
+                <p>Current stock overview.</p>
+            </div>
+
+        </div>
+
+
+        <div class="inventory-summary">
+
+            <div class="inventory-number">
+                {{ product.stock_quantity }}
+            </div>
+
+            <div class="inventory-label">
+                Units available
+            </div>
+
+
+            <div class="inventory-status">
+
+                {% if product.stock_quantity == 0 %}
+
+                    {% include "components/badge.html" with text="Out of stock" type="danger" %}
+
+                {% elif product.is_low_stock %}
+
+                    {% include "components/badge.html" with text="Low stock" type="warning" %}
+
+                {% else %}
+
+                    {% include "components/badge.html" with text="Stock healthy" type="success" %}
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+{% if product.description %}
+
+<div style="height: 18px;"></div>
+
+<section class="panel">
+
+    <div class="panel-header">
+        <div>
+            <h2>Description</h2>
+            <p>Product information.</p>
+        </div>
+    </div>
+
+
+    <div class="customer-notes">
+        {{ product.description|linebreaksbr }}
+    </div>
+
+</section>
+
+{% endif %}
+
+{% endblock %}

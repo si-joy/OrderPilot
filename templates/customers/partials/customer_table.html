@@ -1,0 +1,179 @@
+{% if customers %}
+
+<div class="table-wrapper">
+
+    <table class="data-table">
+
+        <thead>
+            <tr>
+                <th>Customer</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for customer in customers %}
+
+                <tr>
+
+                    <td>
+
+                        <a
+                            href="{% url 'customers:detail' customer.pk %}"
+                            class="customer-name-link"
+                        >
+                            {{ customer.full_name }}
+                        </a>
+
+                    </td>
+
+
+                    <td>
+                        {{ customer.phone }}
+                    </td>
+
+
+                    <td>
+                        {{ customer.email|default:"—" }}
+                    </td>
+
+
+                    <td>
+
+                        {% if customer.city %}
+                            {{ customer.city }}
+                        {% elif customer.district %}
+                            {{ customer.district }}
+                        {% else %}
+                            —
+                        {% endif %}
+
+                    </td>
+
+
+                    <td>
+
+                        {% if customer.is_active %}
+
+                            {% include "components/badge.html" with text="Active" type="success" %}
+
+                        {% else %}
+
+                            {% include "components/badge.html" with text="Archived" type="neutral" %}
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <td>
+                        {{ customer.created_at|date:"d M Y" }}
+                    </td>
+
+
+                    <td>
+
+                        <a
+                            href="{% url 'customers:detail' customer.pk %}"
+                            class="table-action"
+                        >
+                            View
+                        </a>
+
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+
+{% if page_obj.paginator.num_pages > 1 %}
+
+<div class="pagination">
+
+    <div class="pagination-info">
+        Page {{ page_obj.number }}
+        of {{ page_obj.paginator.num_pages }}
+    </div>
+
+
+    <div class="pagination-actions">
+
+        {% if page_obj.has_previous %}
+
+            <a
+                href="?q={{ query|urlencode }}&status={{ status }}&page={{ page_obj.previous_page_number }}"
+                hx-get="?q={{ query|urlencode }}&status={{ status }}&page={{ page_obj.previous_page_number }}"
+                hx-target="#customerTableArea"
+                hx-push-url="true"
+                class="btn btn-secondary btn-small"
+            >
+                Previous
+            </a>
+
+        {% endif %}
+
+
+        {% if page_obj.has_next %}
+
+            <a
+                href="?q={{ query|urlencode }}&status={{ status }}&page={{ page_obj.next_page_number }}"
+                hx-get="?q={{ query|urlencode }}&status={{ status }}&page={{ page_obj.next_page_number }}"
+                hx-target="#customerTableArea"
+                hx-push-url="true"
+                class="btn btn-secondary btn-small"
+            >
+                Next
+            </a>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+{% else %}
+
+<div class="panel">
+
+    <div class="empty-state">
+
+        <div class="empty-icon">
+            ♙
+        </div>
+
+        <h3>
+            No customers found
+        </h3>
+
+        <p>
+            No customers match your current search or filter.
+        </p>
+
+        <a
+            href="{% url 'customers:create' %}"
+            class="btn btn-primary"
+        >
+            Add Customer
+        </a>
+
+    </div>
+
+</div>
+
+{% endif %}

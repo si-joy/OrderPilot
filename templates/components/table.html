@@ -1,0 +1,20 @@
+<div class="table-wrapper">
+
+    <table class="data-table">
+
+        <thead>
+            <tr>
+                {% for column in columns %}
+                    <th>{{ column }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+
+        <tbody>
+            {% block table_body %}
+            {% endblock %}
+        </tbody>
+
+    </table>
+
+</div>

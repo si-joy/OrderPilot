@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Notifications | OrderPilot
+{% endblock %}
+
+
+{% block content %}
+
+<div class="page-content">
+
+    <div class="page-header-row">
+
+        <div>
+
+            <h1 class="page-title">
+                Notifications
+            </h1>
+
+            <p class="page-description">
+                View and manage your latest business notifications.
+            </p>
+
+        </div>
+
+
+        {% if unread_notification_count %}
+
+            <form
+                method="post"
+                action="{% url 'notifications:mark_all_read' %}"
+            >
+
+                {% csrf_token %}
+
+                <input
+                    type="hidden"
+                    name="next"
+                    value="{% url 'notifications:list' %}"
+                >
+
+                <button
+                    type="submit"
+                    class="button button-secondary"
+                >
+                    Mark all as read
+                </button>
+
+            </form>
+
+        {% endif %}
+
+    </div>
+
+
+
+    <div class="notification-page-card">
+
+        {% for notification in notifications %}
+
+            <div
+                class="
+                    notification-page-item
+                    {% if not notification.is_read %}
+                        notification-page-item-unread
+                    {% endif %}
+                "
+            >
+
+                <div
+                    class="
+                        notification-page-dot
+                        notification-page-dot-{{ notification.notification_type }}
+                    "
+                ></div>
+
+
+
+                <div class="notification-page-content">
+
+                    <div class="notification-page-title-row">
+
+                        <strong>
+                            {{ notification.title }}
+                        </strong>
+
+
+                        {% if not notification.is_read %}
+
+                            <span class="notification-unread-badge">
+                                New
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <p>
+                        {{ notification.message }}
+                    </p>
+
+
+                    <small>
+                        {{ notification.created_at|date:"d M Y, h:i A" }}
+                        ·
+                        {{ notification.created_at|timesince }} ago
+                    </small>
+
+                </div>
+
+
+
+                <div class="notification-page-action">
+
+                    {% if not notification.is_read %}
+
+                        <form
+                            method="post"
+                            action="{% url 'notifications:mark_read' notification.pk %}"
+                        >
+
+                            {% csrf_token %}
+
+
+                            <input
+                                type="hidden"
+                                name="next"
+                                value="{% if notification.url %}{{ notification.url }}{% else %}{% url 'notifications:list' %}{% endif %}"
+                            >
+
+
+                            <button
+                                type="submit"
+                                class="notification-page-open"
+                            >
+                                Open
+                                <span>
+                                    →
+                                </span>
+                            </button>
+
+                        </form>
+
+
+                    {% elif notification.url %}
+
+                        <a
+                            href="{{ notification.url }}"
+                            class="notification-page-open"
+                        >
+                            Open
+                            <span>
+                                →
+                            </span>
+                        </a>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+
+        {% empty %}
+
+            <div class="notification-page-empty">
+
+                <div class="notification-page-empty-icon">
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        width="28"
+                        height="28"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+
+                        <path
+                            d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
+                        ></path>
+
+                        <path
+                            d="M13.73 21a2 2 0 0 1-3.46 0"
+                        ></path>
+
+                    </svg>
+
+                </div>
+
+
+                <strong>
+                    No notifications yet
+                </strong>
+
+                <span>
+                    Your business notifications will appear here.
+                </span>
+
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+{% endblock %}

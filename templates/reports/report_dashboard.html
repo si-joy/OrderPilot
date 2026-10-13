@@ -1,0 +1,1680 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Reports | OrderPilot
+{% endblock %}
+
+
+{% block page_heading %}
+Reports
+{% endblock %}
+
+
+{% block page_subheading %}
+Sales, payments, courier settlements and business performance overview.
+{% endblock %}
+
+
+{% block content %}
+
+
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+>
+
+
+<script
+    src="https://cdn.jsdelivr.net/npm/flatpickr"
+></script>
+
+
+<style>
+
+    .summary-product-link {
+    min-width: 0;
+
+    color: var(--text-primary);
+
+    font-size: 12px;
+    font-weight: 600;
+
+    text-decoration: none;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    transition: color 160ms ease;
+}
+
+
+.summary-product-link:hover {
+    color: var(--primary);
+
+    text-decoration: underline;
+}
+
+    /* =====================================================
+       REPORT FILTER
+    ===================================================== */
+
+    .report-filter-panel {
+        margin-bottom: 18px;
+    }
+
+
+    .report-filter-body {
+        padding: 18px 22px 22px;
+    }
+
+
+    .report-filter-form {
+        display: flex;
+        align-items: flex-end;
+
+        flex-wrap: wrap;
+
+        gap: 14px;
+    }
+
+
+    .report-filter-field {
+        flex: 1 1 200px;
+
+        max-width: 260px;
+    }
+
+
+    .report-filter-field .form-control {
+        width: 100%;
+    }
+
+
+    .report-filter-actions {
+        display: flex;
+
+        gap: 8px;
+    }
+
+
+    /* =====================================================
+       SECTION GAP
+    ===================================================== */
+
+    .report-section-gap {
+        height: 18px;
+    }
+
+
+    /* =====================================================
+       REPORT TABLES
+    ===================================================== */
+
+    .report-table-panel {
+        overflow: hidden;
+    }
+
+
+    .report-table-wrapper {
+        width: 100%;
+        max-width: 100%;
+
+        overflow-x: auto;
+        overflow-y: hidden;
+
+        border: 0;
+    }
+
+
+    .report-table-wrapper .data-table {
+        width: 100%;
+        min-width: 100%;
+
+        border-collapse: collapse;
+    }
+
+
+    .report-table-wrapper .data-table th:first-child,
+    .report-table-wrapper .data-table td:first-child {
+        padding-left: 22px;
+    }
+
+
+    .report-table-wrapper .data-table th:last-child,
+    .report-table-wrapper .data-table td:last-child {
+        padding-right: 22px;
+    }
+
+
+    .report-table-wrapper .data-table tbody tr:hover {
+        background: transparent;
+    }
+
+
+    .report-table-wrapper .data-table tbody tr:hover td {
+        background: var(--surface-secondary);
+    }
+
+
+    /* =====================================================
+       REPORT GRID
+    ===================================================== */
+
+    .report-grid {
+        display: grid;
+
+        grid-template-columns:
+            minmax(0, 1.4fr)
+            minmax(300px, 0.8fr);
+
+        gap: 18px;
+    }
+
+
+    .report-empty {
+        padding: 22px;
+
+        color: var(--text-secondary);
+    }
+
+
+    /* =====================================================
+       COURIER RECONCILIATION
+    ===================================================== */
+
+    .courier-stats-grid {
+        display: grid;
+
+        grid-template-columns:
+            repeat(4, minmax(0, 1fr));
+
+        gap: 14px;
+
+        padding: 20px 22px 22px;
+    }
+
+
+    .courier-stat-card {
+        min-width: 0;
+
+        padding: 16px;
+
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+
+        background: var(--surface-secondary);
+    }
+
+
+    .courier-stat-label {
+        color: var(--text-secondary);
+
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+
+    .courier-stat-value {
+        margin-top: 8px;
+
+        color: var(--text-primary);
+
+        font-size: 20px;
+        font-weight: 700;
+
+        line-height: 1.2;
+    }
+
+
+    .courier-stat-note {
+        margin-top: 6px;
+
+        color: var(--text-secondary);
+
+        font-size: 10.5px;
+        line-height: 1.4;
+    }
+
+
+    .courier-stat-success {
+        color: var(--success);
+    }
+
+
+    .courier-stat-danger {
+        color: var(--danger);
+    }
+
+
+    .courier-stat-warning {
+        color: var(--warning);
+    }
+
+
+    .courier-status-grid {
+        display: grid;
+
+        grid-template-columns:
+            repeat(4, minmax(0, 1fr));
+
+        gap: 14px;
+
+        padding: 0 22px 22px;
+    }
+
+
+    .courier-status-card {
+        min-width: 0;
+
+        padding: 14px 16px;
+
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        gap: 12px;
+
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+
+        background: var(--surface);
+    }
+
+
+    .courier-status-label {
+        color: var(--text-secondary);
+
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+
+    .courier-status-value {
+        color: var(--text-primary);
+
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+
+    .courier-report-table {
+        min-width: 1180px !important;
+    }
+
+
+    .report-text-success {
+        color: var(--success);
+    }
+
+
+    .report-text-danger {
+        color: var(--danger);
+    }
+
+
+    .report-text-warning {
+        color: var(--warning);
+    }
+
+
+    .courier-badge {
+        display: inline-flex;
+        align-items: center;
+
+        min-height: 25px;
+
+        padding: 4px 9px;
+
+        border-radius: 999px;
+
+        font-size: 10.5px;
+        font-weight: 700;
+    }
+
+
+    .courier-badge-pending {
+        background:
+            rgba(245, 158, 11, 0.12);
+
+        color: #d97706;
+    }
+
+
+    .courier-badge-partial {
+        background:
+            rgba(59, 130, 246, 0.12);
+
+        color: #2563eb;
+    }
+
+
+    .courier-badge-settled {
+        background:
+            rgba(22, 163, 74, 0.12);
+
+        color: #16a34a;
+    }
+
+
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+
+    @media (max-width: 1100px) {
+
+        .courier-stats-grid,
+        .courier-status-grid {
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+        }
+
+    }
+
+
+    @media (max-width: 950px) {
+
+        .report-grid {
+            grid-template-columns: 1fr;
+        }
+
+    }
+
+
+    @media (max-width: 700px) {
+
+        .report-filter-field {
+            max-width: none;
+
+            flex-basis: 100%;
+        }
+
+
+        .report-filter-actions {
+            width: 100%;
+        }
+
+
+        .report-filter-actions .btn {
+            flex: 1;
+        }
+
+
+        .report-table-wrapper .data-table {
+            min-width: 700px;
+        }
+
+
+        .courier-stats-grid,
+        .courier-status-grid {
+            grid-template-columns: 1fr;
+        }
+
+    }
+
+</style>
+
+
+
+{# ===================================================== #}
+{# DATE FILTER                                           #}
+{# ===================================================== #}
+
+<section class="panel report-filter-panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                Report Period
+            </h2>
+
+            <p>
+                Filter business activity by order creation date.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="report-filter-body">
+
+        <form
+            method="get"
+            class="report-filter-form"
+        >
+
+
+            <div class="report-filter-field">
+
+                <label
+                    for="dateFrom"
+                    class="form-label"
+                >
+                    From
+                </label>
+
+
+                <div class="report-date-input">
+
+                    <input
+                        id="dateFrom"
+                        type="text"
+                        name="date_from"
+                        value="{{ date_from }}"
+                        class="form-control report-date-picker"
+                        placeholder="Select start date"
+                        autocomplete="off"
+                    >
+
+
+                    <button
+                        type="button"
+                        class="report-date-icon"
+                        aria-label="Open start date calendar"
+                        data-datepicker-target="dateFrom"
+                    >
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+
+                            <path
+                                d="M7 2v3M17 2v3M3.5 9h17M5.5 4.5h13a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2Z"
+                            />
+
+                        </svg>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="report-filter-field">
+
+                <label
+                    for="dateTo"
+                    class="form-label"
+                >
+                    To
+                </label>
+
+
+                <div class="report-date-input">
+
+                    <input
+                        id="dateTo"
+                        type="text"
+                        name="date_to"
+                        value="{{ date_to }}"
+                        class="form-control report-date-picker"
+                        placeholder="Select end date"
+                        autocomplete="off"
+                    >
+
+
+                    <button
+                        type="button"
+                        class="report-date-icon"
+                        aria-label="Open end date calendar"
+                        data-datepicker-target="dateTo"
+                    >
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+
+                            <path
+                                d="M7 2v3M17 2v3M3.5 9h17M5.5 4.5h13a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2Z"
+                            />
+
+                        </svg>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="report-filter-actions">
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    Apply Filter
+                </button>
+
+
+                <a
+                    href="{% url 'reports:dashboard' %}"
+                    class="btn btn-secondary"
+                >
+                    Reset
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</section>
+
+
+
+{# ===================================================== #}
+{# FINANCIAL STATS                                      #}
+{# ===================================================== #}
+
+<section class="stats-grid">
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Total Sales
+        </div>
+
+        <div class="stat-value">
+            ৳{{ total_sales|floatformat:2 }}
+        </div>
+
+        <div class="stat-note">
+            Delivered order revenue
+        </div>
+
+    </div>
+
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Total Collected
+        </div>
+
+        <div class="stat-value">
+            ৳{{ total_collected|floatformat:2 }}
+        </div>
+
+        <div class="stat-note">
+            Payments received
+        </div>
+
+    </div>
+
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Outstanding Due
+        </div>
+
+        <div class="stat-value">
+            ৳{{ outstanding_due|floatformat:2 }}
+        </div>
+
+        <div class="stat-note">
+            Current receivable
+        </div>
+
+    </div>
+
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Estimated Profit
+        </div>
+
+        <div class="stat-value">
+            ৳{{ estimated_profit|floatformat:2 }}
+        </div>
+
+        <div class="stat-note">
+            Delivered product margin
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<div class="report-section-gap"></div>
+
+
+
+{# ===================================================== #}
+{# ORDER PERFORMANCE                                    #}
+{# ===================================================== #}
+
+<section class="stats-grid">
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Total Orders
+        </div>
+
+        <div class="stat-value">
+            {{ total_orders }}
+        </div>
+
+        <div class="stat-note">
+            Orders in selected period
+        </div>
+
+    </div>
+
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Delivered
+        </div>
+
+        <div class="stat-value">
+            {{ delivered_count }}
+        </div>
+
+        <div class="stat-note">
+            Completed deliveries
+        </div>
+
+    </div>
+
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Returns
+        </div>
+
+        <div class="stat-value">
+            {{ returned_count }}
+        </div>
+
+        <div class="stat-note">
+            Returned orders
+        </div>
+
+    </div>
+
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Cancelled
+        </div>
+
+        <div class="stat-value">
+            {{ cancelled_count }}
+        </div>
+
+        <div class="stat-note">
+            Cancelled orders
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<div class="report-section-gap"></div>
+
+
+
+{# ===================================================== #}
+{# COURIER + COD SUMMARY                                #}
+{# ===================================================== #}
+
+<section class="panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                Courier & COD Reconciliation
+            </h2>
+
+            <p>
+                Track COD collection, courier fees, return charges and settlements.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="courier-stats-grid">
+
+
+        <div class="courier-stat-card">
+
+            <div class="courier-stat-label">
+                Gross COD Expected
+            </div>
+
+            <div class="courier-stat-value">
+                ৳{{ courier_total_expected|floatformat:2 }}
+            </div>
+
+            <div class="courier-stat-note">
+                Total COD recorded for courier settlement
+            </div>
+
+        </div>
+
+
+
+        <div class="courier-stat-card">
+
+            <div class="courier-stat-label">
+                COD Received
+            </div>
+
+            <div class="courier-stat-value courier-stat-success">
+                ৳{{ courier_total_received|floatformat:2 }}
+            </div>
+
+            <div class="courier-stat-note">
+                Amount received from couriers
+            </div>
+
+        </div>
+
+
+
+        <div class="courier-stat-card">
+
+            <div class="courier-stat-label">
+                Gross Outstanding
+            </div>
+
+            <div class="courier-stat-value courier-stat-danger">
+                ৳{{ courier_outstanding|floatformat:2 }}
+            </div>
+
+            <div class="courier-stat-note">
+                Gross expected minus COD received
+            </div>
+
+        </div>
+
+
+
+        <div class="courier-stat-card">
+
+            <div class="courier-stat-label">
+                Net Expected
+            </div>
+
+            <div class="courier-stat-value">
+                ৳{{ courier_net_expected|floatformat:2 }}
+            </div>
+
+            <div class="courier-stat-note">
+                COD after courier and return charges
+            </div>
+
+        </div>
+
+
+
+        <div class="courier-stat-card">
+
+            <div class="courier-stat-label">
+                Courier Charges
+            </div>
+
+            <div class="courier-stat-value">
+                ৳{{ courier_charges|floatformat:2 }}
+            </div>
+
+            <div class="courier-stat-note">
+                Total courier fees recorded
+            </div>
+
+        </div>
+
+
+
+        <div class="courier-stat-card">
+
+            <div class="courier-stat-label">
+                Return Charges
+            </div>
+
+            <div class="courier-stat-value courier-stat-warning">
+                ৳{{ courier_return_charges|floatformat:2 }}
+            </div>
+
+            <div class="courier-stat-note">
+                Courier return-related charges
+            </div>
+
+        </div>
+
+
+
+        <div class="courier-stat-card">
+
+            <div class="courier-stat-label">
+                Net Outstanding
+            </div>
+
+            <div class="courier-stat-value courier-stat-danger">
+                ৳{{ courier_net_outstanding|floatformat:2 }}
+            </div>
+
+            <div class="courier-stat-note">
+                Net expected minus COD received
+            </div>
+
+        </div>
+
+
+
+        <div class="courier-stat-card">
+
+            <div class="courier-stat-label">
+                Total Settlements
+            </div>
+
+            <div class="courier-stat-value">
+                {{ courier_total_count }}
+            </div>
+
+            <div class="courier-stat-note">
+                Settlement records in selected period
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <div class="courier-status-grid">
+
+
+        <div class="courier-status-card">
+
+            <span class="courier-status-label">
+                Pending
+            </span>
+
+            <strong class="courier-status-value report-text-warning">
+                {{ courier_pending_count }}
+            </strong>
+
+        </div>
+
+
+
+        <div class="courier-status-card">
+
+            <span class="courier-status-label">
+                Partial
+            </span>
+
+            <strong class="courier-status-value">
+                {{ courier_partial_count }}
+            </strong>
+
+        </div>
+
+
+
+        <div class="courier-status-card">
+
+            <span class="courier-status-label">
+                Settled
+            </span>
+
+            <strong class="courier-status-value report-text-success">
+                {{ courier_settled_count }}
+            </strong>
+
+        </div>
+
+
+
+        <div class="courier-status-card">
+
+            <span class="courier-status-label">
+                Total
+            </span>
+
+            <strong class="courier-status-value">
+                {{ courier_total_count }}
+            </strong>
+
+        </div>
+
+
+    </div>
+
+</section>
+
+
+
+<div class="report-section-gap"></div>
+
+
+
+{# ===================================================== #}
+{# COURIER SETTLEMENT DETAILS                            #}
+{# ===================================================== #}
+
+<section class="panel report-table-panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                Courier Settlement Details
+            </h2>
+
+            <p>
+                COD reconciliation for individual orders.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    {% if courier_settlements %}
+
+        <div class="report-table-wrapper">
+
+            <table class="data-table courier-report-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Order
+                        </th>
+
+                        <th>
+                            Customer
+                        </th>
+
+                        <th>
+                            Courier
+                        </th>
+
+                        <th>
+                            COD Expected
+                        </th>
+
+                        <th>
+                            Received
+                        </th>
+
+                        <th>
+                            Courier Fee
+                        </th>
+
+                        <th>
+                            Return Fee
+                        </th>
+
+                        <th>
+                            Outstanding
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                        <th>
+                            Updated
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for settlement in courier_settlements %}
+
+                        <tr>
+
+                            <td>
+
+                                <a
+                                    href="{% url 'orders:detail' settlement.order.pk %}"
+                                    class="order-number-link"
+                                >
+                                    {{ settlement.order.order_number }}
+                                </a>
+
+                            </td>
+
+
+                            <td>
+                                {{ settlement.order.customer.full_name }}
+                            </td>
+
+
+                            <td>
+                                {{ settlement.order.courier_name|default:"—" }}
+                            </td>
+
+
+                            <td>
+                                ৳{{ settlement.cod_expected|floatformat:2 }}
+                            </td>
+
+
+                            <td>
+                                ৳{{ settlement.cod_received|floatformat:2 }}
+                            </td>
+
+
+                            <td>
+                                ৳{{ settlement.courier_charge|floatformat:2 }}
+                            </td>
+
+
+                            <td>
+                                ৳{{ settlement.return_charge|floatformat:2 }}
+                            </td>
+
+
+                            <td>
+
+                                {% if settlement.outstanding > 0 %}
+
+                                    <strong class="report-text-danger">
+                                        ৳{{ settlement.outstanding|floatformat:2 }}
+                                    </strong>
+
+                                {% else %}
+
+                                    <strong class="report-text-success">
+                                        ৳0.00
+                                    </strong>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if settlement.settlement_status == "settled" %}
+
+                                    <span class="courier-badge courier-badge-settled">
+                                        Settled
+                                    </span>
+
+                                {% elif settlement.settlement_status == "partial" %}
+
+                                    <span class="courier-badge courier-badge-partial">
+                                        Partial
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="courier-badge courier-badge-pending">
+                                        Pending
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+                                {{ settlement.updated_at|date:"d M Y" }}
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="report-empty">
+            No courier settlement data available for this report period.
+        </div>
+
+    {% endif %}
+
+</section>
+
+
+
+<div class="report-section-gap"></div>
+
+
+
+<div class="report-grid">
+
+
+    {# ================================================= #}
+    {# TOP PRODUCTS                                     #}
+    {# ================================================= #}
+
+    <section class="panel report-table-panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Top Selling Products
+                </h2>
+
+                <p>
+                    Best-performing delivered products.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        {% if top_products %}
+
+            <div class="report-table-wrapper">
+
+                <table class="data-table">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Product
+                            </th>
+
+                            <th>
+                                SKU
+                            </th>
+
+                            <th>
+                                Qty Sold
+                            </th>
+
+                            <th>
+                                Revenue
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for product in top_products %}
+
+                            <tr>
+
+                                <td>
+
+                                    <strong>
+                                        {{ product.product_name }}
+                                    </strong>
+
+                                </td>
+
+
+                                <td>
+                                    {{ product.sku|default:"—" }}
+                                </td>
+
+
+                                <td>
+                                    {{ product.total_quantity }}
+                                </td>
+
+
+                                <td>
+                                    ৳{{ product.total_revenue|floatformat:2 }}
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        {% else %}
+
+            <div class="report-empty">
+                No delivered product data available.
+            </div>
+
+        {% endif %}
+
+    </section>
+
+
+
+    {# ================================================= #}
+    {# LOW STOCK                                        #}
+    {# ================================================= #}
+
+    <section class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Low Stock
+                </h2>
+
+                <p>
+                    Products needing attention.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="summary-list">
+        
+            {% for product in low_stock_products %}
+        
+                <div class="summary-row">
+                
+                    <a
+                        href="{% url 'products:detail' product.pk %}"
+                        class="summary-product-link"
+                    >
+                        {{ product.name }}
+                    </a>
+                
+                    <strong>
+                        {{ product.stock_quantity }}
+                    </strong>
+                
+                </div>
+            
+            {% empty %}
+            
+                <div class="report-empty">
+                    No low-stock products.
+                </div>
+            
+            {% endfor %}
+            
+        </div>
+
+    </section>
+
+</div>
+
+
+
+<div class="report-section-gap"></div>
+
+
+
+{# ===================================================== #}
+{# RECENT DELIVERED ORDERS                              #}
+{# ===================================================== #}
+
+<section class="panel report-table-panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                Recent Delivered Orders
+            </h2>
+
+            <p>
+                Latest completed sales in this report period.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    {% if recent_delivered_orders %}
+
+        <div class="report-table-wrapper">
+
+            <table class="data-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Order
+                        </th>
+
+                        <th>
+                            Customer
+                        </th>
+
+                        <th>
+                            Total
+                        </th>
+
+                        <th>
+                            Paid
+                        </th>
+
+                        <th>
+                            Due
+                        </th>
+
+                        <th>
+                            Date
+                        </th>
+
+                        <th>
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for order in recent_delivered_orders %}
+
+                        <tr>
+
+                            <td>
+
+                                <a
+                                    href="{% url 'orders:detail' order.pk %}"
+                                    class="order-number-link"
+                                >
+                                    {{ order.order_number }}
+                                </a>
+
+                            </td>
+
+
+                            <td>
+                                {{ order.customer.full_name }}
+                            </td>
+
+
+                            <td>
+                                ৳{{ order.total_amount|floatformat:2 }}
+                            </td>
+
+
+                            <td>
+                                ৳{{ order.paid_amount|floatformat:2 }}
+                            </td>
+
+
+                            <td>
+                                ৳{{ order.due_amount|floatformat:2 }}
+                            </td>
+
+
+                            <td>
+                                {{ order.created_at|date:"d M Y" }}
+                            </td>
+
+
+                            <td>
+
+                                <a
+                                    href="{% url 'orders:detail' order.pk %}"
+                                    class="table-action"
+                                >
+                                    View
+                                </a>
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="report-empty">
+            No delivered orders found for this period.
+        </div>
+
+    {% endif %}
+
+</section>
+
+
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const sharedOptions = {
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d/m/Y",
+            allowInput: false,
+            disableMobile: true,
+            clickOpens: true,
+            monthSelectorType: "dropdown",
+        };
+
+
+        let toPicker = null;
+
+
+        const fromPicker = flatpickr(
+            "#dateFrom",
+            {
+                ...sharedOptions,
+
+                onChange: function (
+                    selectedDates
+                ) {
+
+                    if (
+                        selectedDates.length
+                        && toPicker
+                    ) {
+
+                        toPicker.set(
+                            "minDate",
+                            selectedDates[0]
+                        );
+
+                    }
+
+                },
+            }
+        );
+
+
+        toPicker = flatpickr(
+            "#dateTo",
+            {
+                ...sharedOptions,
+
+                onChange: function (
+                    selectedDates
+                ) {
+
+                    if (
+                        selectedDates.length
+                        && fromPicker
+                    ) {
+
+                        fromPicker.set(
+                            "maxDate",
+                            selectedDates[0]
+                        );
+
+                    }
+
+                },
+            }
+        );
+
+
+        /* ---------------------------------------------
+           Open picker from custom calendar icon
+        --------------------------------------------- */
+
+        document
+            .querySelectorAll(
+                "[data-datepicker-target]"
+            )
+            .forEach(
+                function (button) {
+
+                    button.addEventListener(
+                        "click",
+                        function () {
+
+                            const targetId =
+                                button.dataset.datepickerTarget;
+
+
+                            if (
+                                targetId === "dateFrom"
+                            ) {
+
+                                fromPicker.open();
+
+                            }
+
+
+                            if (
+                                targetId === "dateTo"
+                            ) {
+
+                                toPicker.open();
+
+                            }
+
+                        }
+                    );
+
+                }
+            );
+
+
+        /* ---------------------------------------------
+           Clicking visible input opens picker
+        --------------------------------------------- */
+
+        const fromAlt =
+            fromPicker.altInput;
+
+        const toAlt =
+            toPicker.altInput;
+
+
+        if (fromAlt) {
+
+            fromAlt.addEventListener(
+                "click",
+                function () {
+                    fromPicker.open();
+                }
+            );
+
+        }
+
+
+        if (toAlt) {
+
+            toAlt.addEventListener(
+                "click",
+                function () {
+                    toPicker.open();
+                }
+            );
+
+        }
+
+
+        /* ---------------------------------------------
+           Existing selected dates constrain each other
+        --------------------------------------------- */
+
+        if (
+            fromPicker.selectedDates.length
+        ) {
+
+            toPicker.set(
+                "minDate",
+                fromPicker.selectedDates[0]
+            );
+
+        }
+
+
+        if (
+            toPicker.selectedDates.length
+        ) {
+
+            fromPicker.set(
+                "maxDate",
+                toPicker.selectedDates[0]
+            );
+
+        }
+
+    }
+);
+
+</script>
+
+
+{% endblock %}

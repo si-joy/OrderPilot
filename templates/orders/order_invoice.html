@@ -1,0 +1,1255 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Invoice {{ order.order_number }} | {{ business.name }}
+    </title>
+
+
+    <style>
+
+        /* =================================================
+           BASE
+        ================================================= */
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+
+        body {
+            background: #eef1f4;
+            color: #17202a;
+
+            font-family:
+                Inter,
+                ui-sans-serif,
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+
+        button,
+        a {
+            font: inherit;
+        }
+
+
+        /* =================================================
+           PAGE
+        ================================================= */
+
+        .invoice-page {
+            width: min(
+                900px,
+                calc(100% - 32px)
+            );
+
+            margin: 32px auto;
+
+            background: #ffffff;
+
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+
+            box-shadow:
+                0 16px 45px
+                rgba(15, 23, 42, 0.08);
+
+            overflow: hidden;
+        }
+
+
+        .invoice-body {
+            padding: 42px;
+        }
+
+
+        /* =================================================
+           TOP ACTIONS
+        ================================================= */
+
+        .invoice-actions {
+            width: min(
+                900px,
+                calc(100% - 32px)
+            );
+
+            margin:
+                24px auto
+                -12px;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 12px;
+        }
+
+
+        .btn {
+            min-height: 40px;
+
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 9px 15px;
+
+            border: 1px solid #dfe3e8;
+            border-radius: 9px;
+
+            background: #ffffff;
+
+            color: #25303d;
+
+            font-size: 13px;
+            font-weight: 600;
+
+            text-decoration: none;
+
+            cursor: pointer;
+
+            transition:
+                background 180ms ease,
+                border-color 180ms ease;
+        }
+
+
+        .btn:hover {
+            background: #f6f7f9;
+        }
+
+
+        .btn-primary {
+            border-color: #0f766e;
+
+            background: #0f766e;
+
+            color: #ffffff;
+        }
+
+
+        .btn-primary:hover {
+            background: #0d655f;
+        }
+
+
+        /* =================================================
+           HEADER
+        ================================================= */
+
+        .invoice-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+
+            gap: 32px;
+
+            padding-bottom: 28px;
+
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+
+        .invoice-business {
+            display: flex;
+            align-items: center;
+
+            gap: 14px;
+
+            min-width: 0;
+        }
+
+
+        .invoice-logo {
+            width: 64px;
+            height: 64px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            flex: 0 0 64px;
+
+            overflow: hidden;
+
+            border-radius: 14px;
+
+            background: #e7f6f4;
+
+            color: #0f766e;
+
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+
+        .invoice-logo img {
+            width: 100%;
+            height: 100%;
+                
+            display: block;
+                
+            object-fit: contain;
+            object-position: center;
+                
+            padding: 4px;
+        }
+
+
+        .invoice-business-name {
+            margin: 0;
+
+            color: #111827;
+
+            font-size: 20px;
+            font-weight: 750;
+
+            line-height: 1.25;
+        }
+
+
+        .invoice-business-meta {
+            margin-top: 5px;
+
+            color: #6b7280;
+
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+
+        .invoice-title {
+            flex-shrink: 0;
+
+            text-align: right;
+        }
+
+
+        .invoice-title h1 {
+            margin: 0;
+
+            color: #111827;
+
+            font-size: 28px;
+            font-weight: 800;
+
+            letter-spacing: 0.04em;
+        }
+
+
+        .invoice-number {
+            margin-top: 5px;
+
+            color: #0f766e;
+
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+
+        /* =================================================
+           INFORMATION
+        ================================================= */
+
+        .invoice-info-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+
+            gap: 32px;
+
+            padding: 28px 0;
+        }
+
+
+        .invoice-section-label {
+            margin-bottom: 10px;
+
+            color: #9ca3af;
+
+            font-size: 10px;
+            font-weight: 700;
+
+            letter-spacing: 0.08em;
+
+            text-transform: uppercase;
+        }
+
+
+        .invoice-customer-name {
+            margin-bottom: 4px;
+
+            color: #111827;
+
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+
+        .invoice-info-text {
+            color: #5f6875;
+
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+
+        .invoice-meta-list {
+            display: grid;
+
+            grid-template-columns:
+                auto auto;
+
+            justify-content: end;
+
+            gap: 7px 24px;
+
+            margin: 0;
+        }
+
+
+        .invoice-meta-list dt {
+            color: #6b7280;
+
+            font-size: 11px;
+        }
+
+
+        .invoice-meta-list dd {
+            margin: 0;
+
+            color: #111827;
+
+            font-size: 11px;
+            font-weight: 650;
+
+            text-align: right;
+        }
+
+
+        /* =================================================
+           STATUS
+        ================================================= */
+
+        .invoice-badge {
+            display: inline-flex;
+            align-items: center;
+
+            min-height: 24px;
+
+            padding: 3px 9px;
+
+            border-radius: 999px;
+
+            background: #e7f6f4;
+
+            color: #0f766e;
+
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+
+        /* =================================================
+           ITEMS
+        ================================================= */
+
+        .invoice-table-wrap {
+            width: 100%;
+
+            overflow: hidden;
+
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+        }
+
+
+        .invoice-table {
+            width: 100%;
+
+            border-collapse: collapse;
+        }
+
+
+        .invoice-table th,
+        .invoice-table td {
+            padding: 13px 14px;
+
+            border-bottom: 1px solid #e5e7eb;
+
+            text-align: left;
+        }
+
+
+        .invoice-table th {
+            background: #f8fafb;
+
+            color: #6b7280;
+
+            font-size: 10px;
+            font-weight: 700;
+
+            letter-spacing: 0.04em;
+
+            text-transform: uppercase;
+        }
+
+
+        .invoice-table td {
+            color: #333d49;
+
+            font-size: 12px;
+        }
+
+
+        .invoice-table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+
+        .invoice-table th:nth-child(3),
+        .invoice-table td:nth-child(3) {
+            text-align: center;
+        }
+
+
+        .invoice-table th:nth-child(4),
+        .invoice-table td:nth-child(4),
+        .invoice-table th:nth-child(5),
+        .invoice-table td:nth-child(5) {
+            text-align: right;
+        }
+
+
+        .invoice-product-name {
+            color: #111827;
+
+            font-weight: 650;
+        }
+
+
+        /* =================================================
+           TOTALS
+        ================================================= */
+
+        .invoice-summary-area {
+            display: flex;
+            justify-content: flex-end;
+
+            padding-top: 24px;
+        }
+
+
+        .invoice-summary {
+            width: 330px;
+        }
+
+
+        .invoice-summary-row {
+            min-height: 38px;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 20px;
+
+            border-bottom: 1px solid #eef0f2;
+        }
+
+
+        .invoice-summary-row span {
+            color: #6b7280;
+
+            font-size: 11px;
+        }
+
+
+        .invoice-summary-row strong {
+            color: #111827;
+
+            font-size: 12px;
+            font-weight: 650;
+        }
+
+
+        .invoice-summary-row.total {
+            min-height: 48px;
+
+            margin-top: 3px;
+
+            border-bottom: 0;
+        }
+
+
+        .invoice-summary-row.total span {
+            color: #111827;
+
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+
+        .invoice-summary-row.total strong {
+            color: #0f766e;
+
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+
+        .invoice-summary-row.due strong {
+            color: #dc2626;
+        }
+
+
+        .invoice-summary-row.paid strong {
+            color: #16a34a;
+        }
+
+
+        /* =================================================
+           DELIVERY
+        ================================================= */
+
+        .invoice-delivery {
+            margin-top: 30px;
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+
+            gap: 28px;
+
+            padding: 20px;
+
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+
+            background: #fafbfc;
+        }
+
+
+        /* =================================================
+           FOOTER
+        ================================================= */
+
+        .invoice-footer {
+            margin-top: 34px;
+            padding-top: 22px;
+
+            border-top: 1px solid #e5e7eb;
+
+            text-align: center;
+        }
+
+
+        .invoice-footer-note {
+            margin: 0 auto;
+
+            max-width: 620px;
+
+            color: #6b7280;
+
+            font-size: 11px;
+            line-height: 1.7;
+        }
+
+
+        .invoice-powered {
+            margin-top: 14px;
+
+            color: #b0b5bd;
+
+            font-size: 9px;
+        }
+
+
+        /* =================================================
+           RESPONSIVE
+        ================================================= */
+
+        @media (max-width: 700px) {
+
+            .invoice-page {
+                width: 100%;
+                margin: 0;
+
+                border: 0;
+                border-radius: 0;
+            }
+
+
+            .invoice-actions {
+                width: calc(100% - 28px);
+
+                margin: 14px auto;
+            }
+
+
+            .invoice-body {
+                padding: 24px 18px;
+            }
+
+
+            .invoice-header {
+                flex-direction: column;
+            }
+
+
+            .invoice-title {
+                width: 100%;
+
+                text-align: left;
+            }
+
+
+            .invoice-info-grid {
+                grid-template-columns: 1fr;
+
+                gap: 20px;
+            }
+
+
+            .invoice-meta-list {
+                justify-content: start;
+            }
+
+
+            .invoice-meta-list dd {
+                text-align: left;
+            }
+
+
+            .invoice-table-wrap {
+                overflow-x: auto;
+            }
+
+
+            .invoice-table {
+                min-width: 620px;
+            }
+
+
+            .invoice-summary {
+                width: 100%;
+            }
+
+
+            .invoice-delivery {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+
+        /* =================================================
+           PRINT
+        ================================================= */
+
+        @media print {
+
+            @page {
+                size: A4;
+
+                margin: 12mm;
+            }
+
+            .invoice-logo img {
+                object-fit: contain !important;
+                object-position: center !important;
+            }
+
+            body {
+                background: #ffffff;
+
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+
+            .no-print {
+                display: none !important;
+            }
+
+
+            .invoice-page {
+                width: 100%;
+
+                margin: 0;
+
+                border: 0;
+                border-radius: 0;
+
+                box-shadow: none;
+            }
+
+
+            .invoice-body {
+                padding: 0;
+            }
+
+
+            .invoice-table-wrap,
+            .invoice-delivery,
+            .invoice-summary-area {
+                break-inside: avoid;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- =================================================
+         ACTION BAR
+    ================================================== -->
+
+    <div class="invoice-actions no-print">
+
+        <a
+            href="{% url 'orders:detail' order.pk %}"
+            class="btn"
+        >
+            ← Back to Order
+        </a>
+
+
+        <a
+            href="{% url 'orders:invoice_pdf' order.pk %}"
+            class="btn btn-primary"
+        >
+            ↓ Download Invoice
+        </a>
+
+    </div>
+
+
+
+    <!-- =================================================
+         INVOICE
+    ================================================== -->
+
+    <main class="invoice-page">
+
+        <div class="invoice-body">
+
+
+            <!-- =========================================
+                 HEADER
+            ========================================== -->
+
+            <header class="invoice-header">
+
+                <div class="invoice-business">
+
+                    <div class="invoice-logo">
+
+                        {% if business.logo %}
+
+                            <img
+                                src="{{ business.logo.url }}"
+                                alt="{{ business.name }}"
+                            >
+
+                        {% else %}
+
+                            {{ business.name|slice:":1"|upper }}
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div>
+
+                        <h2 class="invoice-business-name">
+                            {{ business.name }}
+                        </h2>
+
+
+                        <div class="invoice-business-meta">
+
+                            {% if business.address %}
+
+                                {{ business.address|linebreaksbr }}
+
+                                <br>
+
+                            {% endif %}
+
+
+                            {% if business.phone %}
+
+                                {{ business.phone }}
+
+                            {% endif %}
+
+
+                            {% if business.email %}
+
+                                {% if business.phone %}
+                                    ·
+                                {% endif %}
+
+                                {{ business.email }}
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="invoice-title">
+
+                    <h1>
+                        INVOICE
+                    </h1>
+
+                    <div class="invoice-number">
+                        {{ order.order_number }}
+                    </div>
+
+                </div>
+
+            </header>
+
+
+
+            <!-- =========================================
+                 CUSTOMER / ORDER INFO
+            ========================================== -->
+
+            <section class="invoice-info-grid">
+
+
+                <div>
+
+                    <div class="invoice-section-label">
+                        Bill To
+                    </div>
+
+
+                    <div class="invoice-customer-name">
+                        {{ order.customer.full_name }}
+                    </div>
+
+
+                    <div class="invoice-info-text">
+
+                        {% if order.customer.phone %}
+
+                            {{ order.customer.phone }}
+
+                            <br>
+
+                        {% endif %}
+
+
+                        {% if order.delivery_address %}
+
+                            {{ order.delivery_address|linebreaksbr }}
+
+                        {% else %}
+
+                            No delivery address provided.
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+
+                <div>
+
+                    <div class="invoice-section-label">
+                        Invoice Details
+                    </div>
+
+
+                    <dl class="invoice-meta-list">
+
+                        <dt>
+                            Date
+                        </dt>
+
+                        <dd>
+                            {{ order.created_at|date:"d M Y" }}
+                        </dd>
+
+
+                        <dt>
+                            Order Status
+                        </dt>
+
+                        <dd>
+
+                            <span class="invoice-badge">
+                                {{ order.get_status_display }}
+                            </span>
+
+                        </dd>
+
+
+                        <dt>
+                            Payment Method
+                        </dt>
+
+                        <dd>
+                            {{ order.get_payment_method_display }}
+                        </dd>
+
+
+                        <dt>
+                            Payment Status
+                        </dt>
+
+                        <dd>
+                            {{ order.get_payment_status_display }}
+                        </dd>
+
+                    </dl>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =========================================
+                 ITEMS
+            ========================================== -->
+
+            <section>
+
+                <div class="invoice-section-label">
+                    Order Items
+                </div>
+
+
+                <div class="invoice-table-wrap">
+
+                    <table class="invoice-table">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Product
+                                </th>
+
+                                <th>
+                                    SKU
+                                </th>
+
+                                <th>
+                                    Qty
+                                </th>
+
+                                <th>
+                                    Unit Price
+                                </th>
+
+                                <th>
+                                    Total
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            {% for item in order.items.all %}
+
+                                <tr>
+
+                                    <td>
+
+                                        <div class="invoice-product-name">
+                                            {{ item.product_name }}
+                                        </div>
+
+                                    </td>
+
+
+                                    <td>
+                                        {{ item.sku|default:"—" }}
+                                    </td>
+
+
+                                    <td>
+                                        {{ item.quantity }}
+                                    </td>
+
+
+                                    <td>
+                                        ৳{{ item.unit_price|floatformat:2 }}
+                                    </td>
+
+
+                                    <td>
+
+                                        <strong>
+                                            ৳{{ item.line_total|floatformat:2 }}
+                                        </strong>
+
+                                    </td>
+
+                                </tr>
+
+                            {% empty %}
+
+                                <tr>
+
+                                    <td colspan="5">
+                                        No items found.
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =========================================
+                 TOTALS
+            ========================================== -->
+
+            <section class="invoice-summary-area">
+
+                <div class="invoice-summary">
+
+
+                    <div class="invoice-summary-row">
+
+                        <span>
+                            Subtotal
+                        </span>
+
+                        <strong>
+                            ৳{{ order.subtotal|floatformat:2 }}
+                        </strong>
+
+                    </div>
+
+
+                    <div class="invoice-summary-row">
+
+                        <span>
+                            Discount
+                        </span>
+
+                        <strong>
+                            - ৳{{ order.discount|floatformat:2 }}
+                        </strong>
+
+                    </div>
+
+
+                    <div class="invoice-summary-row">
+
+                        <span>
+                            Delivery Charge
+                        </span>
+
+                        <strong>
+                            ৳{{ order.delivery_charge|floatformat:2 }}
+                        </strong>
+
+                    </div>
+
+
+                    <div class="invoice-summary-row total">
+
+                        <span>
+                            Total
+                        </span>
+
+                        <strong>
+                            ৳{{ order.total_amount|floatformat:2 }}
+                        </strong>
+
+                    </div>
+
+
+                    <div class="invoice-summary-row paid">
+
+                        <span>
+                            Paid
+                        </span>
+
+                        <strong>
+                            ৳{{ order.paid_amount|floatformat:2 }}
+                        </strong>
+
+                    </div>
+
+
+                    <div class="invoice-summary-row due">
+
+                        <span>
+                            Amount Due
+                        </span>
+
+                        <strong>
+                            ৳{{ order.due_amount|floatformat:2 }}
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- =========================================
+                 DELIVERY INFORMATION
+            ========================================== -->
+
+            {% if order.courier_name or order.tracking_number %}
+
+                <section class="invoice-delivery">
+
+
+                    <div>
+
+                        <div class="invoice-section-label">
+                            Courier
+                        </div>
+
+
+                        <div class="invoice-info-text">
+
+                            {% if order.courier_name %}
+
+                                <strong>
+                                    {{ order.courier_name }}
+                                </strong>
+
+                            {% else %}
+
+                                —
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+
+                    <div>
+
+                        <div class="invoice-section-label">
+                            Tracking Number
+                        </div>
+
+
+                        <div class="invoice-info-text">
+
+                            {% if order.tracking_number %}
+
+                                <strong>
+                                    {{ order.tracking_number }}
+                                </strong>
+
+                            {% else %}
+
+                                —
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+            {% endif %}
+
+
+
+            <!-- =========================================
+                 FOOTER
+            ========================================== -->
+
+            <footer class="invoice-footer">
+
+                {% if business.invoice_note %}
+
+                    <p class="invoice-footer-note">
+                        {{ business.invoice_note|linebreaksbr }}
+                    </p>
+
+                {% else %}
+
+                    <p class="invoice-footer-note">
+                        Thank you for your order.
+                    </p>
+
+                {% endif %}
+
+
+                <div class="invoice-powered">
+                    Generated with OrderPilot
+                </div>
+
+            </footer>
+
+
+        </div>
+
+    </main>
+
+
+</body>
+
+</html>

@@ -1,0 +1,583 @@
+<header class="topbar">
+
+    {# ===================================================== #}
+    {# LEFT SIDE                                             #}
+    {# ===================================================== #}
+
+    <div class="topbar-left">
+
+        <button
+            class="icon-button mobile-menu-button"
+            id="sidebarToggle"
+            type="button"
+            aria-label="Open navigation"
+        >
+            ☰
+        </button>
+
+
+        <div>
+
+            <div class="page-heading">
+                {{ page_heading|default:"Dashboard" }}
+            </div>
+
+            <div class="page-subheading">
+                {{ page_subheading|default:"Manage your business from one place." }}
+            </div>
+
+        </div>
+
+    </div>
+
+
+    {# ===================================================== #}
+    {# RIGHT SIDE                                            #}
+    {# ===================================================== #}
+
+    <div class="topbar-actions">
+
+
+        {# ================================================= #}
+        {# THEME TOGGLE                                      #}
+        {# ================================================= #}
+
+        <button
+            class="icon-button"
+            id="themeToggle"
+            type="button"
+            aria-label="Toggle theme"
+        >
+            <span id="themeIcon">
+                ☾
+            </span>
+        </button>
+
+
+
+        {% if request.user.is_authenticated %}
+
+
+            {# ================================================= #}
+            {# NOTIFICATIONS                                     #}
+            {# ================================================= #}
+
+            <div class="notification-menu">
+
+                <button
+                    class="icon-button notification-toggle"
+                    type="button"
+                    aria-label="Notifications"
+                    aria-expanded="false"
+                    aria-controls="notificationDropdown"
+                    id="notificationToggle"
+                >
+
+                    <span
+                        class="notification-bell"
+                        aria-hidden="true"
+                    >
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            width="18"
+                            height="18"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path
+                                d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
+                            ></path>
+
+                            <path
+                                d="M13.73 21a2 2 0 0 1-3.46 0"
+                            ></path>
+                        </svg>
+
+                    </span>
+
+
+                    {% if unread_notification_count %}
+
+                        <span class="notification-count">
+
+                            {% if unread_notification_count > 99 %}
+
+                                99+
+
+                            {% else %}
+
+                                {{ unread_notification_count }}
+
+                            {% endif %}
+
+                        </span>
+
+                    {% endif %}
+
+                </button>
+
+
+
+                <div
+                    class="notification-dropdown"
+                    id="notificationDropdown"
+                    aria-hidden="true"
+                >
+
+
+                    {# ========================================= #}
+                    {# DROPDOWN HEADER                           #}
+                    {# ========================================= #}
+
+                    <div class="notification-dropdown-header">
+
+                        <div>
+
+                            <strong>
+                                Notifications
+                            </strong>
+
+                            <span>
+
+                                {% if unread_notification_count %}
+
+                                    {{ unread_notification_count }} unread
+
+                                {% else %}
+
+                                    You're all caught up
+
+                                {% endif %}
+
+                            </span>
+
+                        </div>
+
+
+                        {% if unread_notification_count %}
+
+                            <form
+                                method="post"
+                                action="{% url 'notifications:mark_all_read' %}"
+                            >
+
+                                {% csrf_token %}
+
+                                <input
+                                    type="hidden"
+                                    name="next"
+                                    value="{{ request.path }}"
+                                >
+
+                                <button
+                                    type="submit"
+                                    class="notification-read-all"
+                                >
+                                    Mark all read
+                                </button>
+
+                            </form>
+
+                        {% endif %}
+
+                    </div>
+
+
+
+                    {# ========================================= #}
+                    {# NOTIFICATION ITEMS                        #}
+                    {# ========================================= #}
+
+                    <div class="notification-items">
+
+                        {% for notification in header_notifications %}
+
+                            <div
+                                class="
+                                    notification-item
+                                    {% if not notification.is_read %}
+                                        notification-item-unread
+                                    {% endif %}
+                                "
+                            >
+
+                                <div
+                                    class="
+                                        notification-dot
+                                        notification-dot-{{ notification.notification_type }}
+                                    "
+                                ></div>
+
+
+                                <div class="notification-copy">
+
+                                    <strong>
+                                        {{ notification.title }}
+                                    </strong>
+
+                                    <p>
+                                        {{ notification.message }}
+                                    </p>
+
+                                    <small>
+                                        {{ notification.created_at|timesince }} ago
+                                    </small>
+
+                                </div>
+
+
+                                <div class="notification-item-action">
+
+                                    {% if not notification.is_read %}
+
+                                        <form
+                                            method="post"
+                                            action="{% url 'notifications:mark_read' notification.pk %}"
+                                        >
+
+                                            {% csrf_token %}
+
+                                            <input
+                                                type="hidden"
+                                                name="next"
+                                                value="{% if notification.url %}{{ notification.url }}{% else %}{{ request.path }}{% endif %}"
+                                            >
+
+                                            <button
+                                                type="submit"
+                                                class="notification-open"
+                                                aria-label="Open notification"
+                                                title="Open notification"
+                                            >
+                                                →
+                                            </button>
+
+                                        </form>
+
+
+                                    {% elif notification.url %}
+
+                                        <a
+                                            href="{{ notification.url }}"
+                                            class="notification-open"
+                                            aria-label="Open notification"
+                                            title="Open notification"
+                                        >
+                                            →
+                                        </a>
+
+                                    {% endif %}
+
+                                </div>
+
+                            </div>
+
+
+                        {% empty %}
+
+                            <div class="notification-empty">
+
+                                <div class="notification-empty-icon">
+
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        width="22"
+                                        height="22"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="1.7"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                    >
+                                        <path
+                                            d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
+                                        ></path>
+
+                                        <path
+                                            d="M13.73 21a2 2 0 0 1-3.46 0"
+                                        ></path>
+                                    </svg>
+
+                                </div>
+
+                                <strong>
+                                    You're all caught up
+                                </strong>
+
+                                <span>
+                                    No notifications yet.
+                                </span>
+
+                            </div>
+
+                        {% endfor %}
+
+                    </div>
+
+
+
+                    {# ========================================= #}
+                    {# FOOTER                                    #}
+                    {# ========================================= #}
+
+                    <div class="notification-dropdown-footer">
+
+                        <a href="{% url 'notifications:list' %}">
+                            View all notifications
+                            <span aria-hidden="true">
+                                →
+                            </span>
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            {# ================================================= #}
+            {# ACCOUNT MENU                                      #}
+            {# ================================================= #}
+
+            <details class="account-menu">
+
+                <summary class="account-menu-trigger">
+
+
+                    {# ========================================= #}
+                    {# USER AVATAR                               #}
+                    {# ========================================= #}
+
+                    <div class="user-avatar">
+
+                        {% if request.user.profile.avatar %}
+
+                            <img
+                                src="{{ request.user.profile.avatar.url }}"
+                                alt="{{ request.user.username }}"
+                                class="header-avatar-image"
+                            >
+
+                        {% elif request.user.first_name %}
+
+                            {{ request.user.first_name|slice:":1"|upper }}
+
+                        {% else %}
+
+                            {{ request.user.username|slice:":1"|upper }}
+
+                        {% endif %}
+
+                    </div>
+
+
+
+                    {# ========================================= #}
+                    {# USER INFO                                 #}
+                    {# ========================================= #}
+
+                    <div class="user-info">
+
+                        <div class="user-name">
+
+                            {% if request.user.get_full_name %}
+
+                                {{ request.user.get_full_name }}
+
+                            {% else %}
+
+                                {{ request.user.username }}
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="user-role">
+
+                            {% if current_membership %}
+
+                                {{ current_membership.get_role_display }}
+
+                            {% else %}
+
+                                Member
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+
+                    <span class="account-menu-chevron">
+                        ▾
+                    </span>
+
+                </summary>
+
+
+
+                {# ============================================= #}
+                {# ACCOUNT DROPDOWN                              #}
+                {# ============================================= #}
+
+                <div class="account-dropdown">
+
+
+                    {# ========================================= #}
+                    {# ACCOUNT HEADER                            #}
+                    {# ========================================= #}
+
+                    <div class="account-dropdown-header">
+
+                        <div class="account-dropdown-name">
+
+                            {% if request.user.get_full_name %}
+
+                                {{ request.user.get_full_name }}
+
+                            {% else %}
+
+                                {{ request.user.username }}
+
+                            {% endif %}
+
+                        </div>
+
+
+                        {% if request.user.email %}
+
+                            <div class="account-dropdown-email">
+                                {{ request.user.email }}
+                            </div>
+
+                        {% endif %}
+
+
+                        {% if current_business %}
+
+                            <div class="account-dropdown-workspace">
+                                {{ current_business.name }}
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="account-dropdown-divider"></div>
+
+
+
+                    {# ========================================= #}
+                    {# PROFILE                                   #}
+                    {# ========================================= #}
+
+                    <a
+                        href="{% url 'core:profile' %}"
+                        class="account-dropdown-item"
+                    >
+
+                        <span class="account-dropdown-icon">
+                            ♙
+                        </span>
+
+                        <span>
+                            My Profile
+                        </span>
+
+                    </a>
+
+
+
+                    {# ========================================= #}
+                    {# CHANGE PASSWORD                           #}
+                    {# ========================================= #}
+
+                    <a
+                        href="{% url 'core:password_change' %}"
+                        class="account-dropdown-item"
+                    >
+
+                        <span class="account-dropdown-icon">
+                            ◇
+                        </span>
+
+                        <span>
+                            Change Password
+                        </span>
+
+                    </a>
+
+
+
+                    {# ========================================= #}
+                    {# BUSINESS SETTINGS                         #}
+                    {# ========================================= #}
+
+                    <a
+                        href="{% url 'businesses:settings' %}"
+                        class="account-dropdown-item"
+                    >
+
+                        <span class="account-dropdown-icon">
+                            ⚙
+                        </span>
+
+                        <span>
+                            Business Settings
+                        </span>
+
+                    </a>
+
+
+                    <div class="account-dropdown-divider"></div>
+
+
+
+                    {# ========================================= #}
+                    {# LOGOUT                                    #}
+                    {# ========================================= #}
+
+                    <form
+                        method="post"
+                        action="{% url 'core:logout' %}"
+                        class="account-logout-form"
+                    >
+
+                        {% csrf_token %}
+
+                        <button
+                            type="submit"
+                            class="account-dropdown-item account-logout-button"
+                        >
+
+                            <span class="account-dropdown-icon">
+                                ↪
+                            </span>
+
+                            <span>
+                                Sign Out
+                            </span>
+
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </details>
+
+
+        {% endif %}
+
+    </div>
+
+</header>

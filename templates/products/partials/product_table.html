@@ -1,0 +1,195 @@
+{% if products %}
+
+<div class="table-wrapper">
+
+    <table class="data-table">
+
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>SKU</th>
+                <th>Selling Price</th>
+                <th>Cost Price</th>
+                <th>Stock</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+
+
+        <tbody>
+
+            {% for product in products %}
+
+                <tr>
+
+                    <td>
+
+                        <a
+                            href="{% url 'products:detail' product.pk %}"
+                            class="table-primary product-name-link"
+                        >
+                            {{ product.name }}
+                        </a>
+
+                    </td>
+
+
+                    <td>
+                        {{ product.sku|default:"—" }}
+                    </td>
+
+
+                    <td>
+                        ৳{{ product.selling_price }}
+                    </td>
+
+
+                    <td>
+                        ৳{{ product.cost_price }}
+                    </td>
+
+
+                    <td>
+
+                        <div class="stock-cell">
+
+                            <strong>
+                                {{ product.stock_quantity }}
+                            </strong>
+
+
+                            {% if product.stock_quantity == 0 %}
+
+                                {% include "components/badge.html" with text="Out of stock" type="danger" %}
+
+                            {% elif product.is_low_stock %}
+
+                                {% include "components/badge.html" with text="Low stock" type="warning" %}
+
+                            {% endif %}
+
+                        </div>
+
+                    </td>
+
+
+                    <td>
+
+                        {% if product.is_active %}
+
+                            {% include "components/badge.html" with text="Active" type="success" %}
+
+                        {% else %}
+
+                            {% include "components/badge.html" with text="Archived" type="neutral" %}
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <td>
+
+                        <a
+                            href="{% url 'products:detail' product.pk %}"
+                            class="table-action"
+                        >
+                            View
+                        </a>
+
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+
+{% if page_obj.paginator.num_pages > 1 %}
+
+<div class="pagination">
+
+    <div class="pagination-info">
+        Page {{ page_obj.number }}
+        of {{ page_obj.paginator.num_pages }}
+    </div>
+
+
+    <div class="pagination-actions">
+
+        {% if page_obj.has_previous %}
+
+            <a
+                href="?q={{ query|urlencode }}&status={{ status }}&stock={{ stock }}&page={{ page_obj.previous_page_number }}"
+
+                hx-get="?q={{ query|urlencode }}&status={{ status }}&stock={{ stock }}&page={{ page_obj.previous_page_number }}"
+
+                hx-target="#productTableArea"
+                hx-push-url="true"
+
+                class="btn btn-secondary btn-small"
+            >
+                Previous
+            </a>
+
+        {% endif %}
+
+
+        {% if page_obj.has_next %}
+
+            <a
+                href="?q={{ query|urlencode }}&status={{ status }}&stock={{ stock }}&page={{ page_obj.next_page_number }}"
+
+                hx-get="?q={{ query|urlencode }}&status={{ status }}&stock={{ stock }}&page={{ page_obj.next_page_number }}"
+
+                hx-target="#productTableArea"
+                hx-push-url="true"
+
+                class="btn btn-secondary btn-small"
+            >
+                Next
+            </a>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+{% else %}
+
+<div class="panel">
+
+    <div class="empty-state">
+
+        <div class="empty-icon">
+            □
+        </div>
+
+        <h3>No products found</h3>
+
+        <p>
+            No products match your current search or filter.
+        </p>
+
+        <a
+            href="{% url 'products:create' %}"
+            class="btn btn-primary"
+        >
+            Add Product
+        </a>
+
+    </div>
+
+</div>
+
+{% endif %}

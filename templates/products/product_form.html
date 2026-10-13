@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ page_title }} | OrderPilot
+{% endblock %}
+
+{% block page_heading %}
+{{ page_title }}
+{% endblock %}
+
+{% block page_subheading %}
+Add or update product information.
+{% endblock %}
+
+
+{% block content %}
+
+<div class="form-page">
+
+    <form method="post">
+
+        {% csrf_token %}
+
+
+        {% if form.non_field_errors %}
+
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+
+        {% endif %}
+
+
+        <div class="panel">
+
+            <div class="panel-header">
+
+                <div>
+                    <h2>Product Information</h2>
+
+                    <p>
+                        Manage product details, pricing and stock.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="form-section">
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+
+                        <label class="form-label">
+                            Product Name
+                            <span class="required">*</span>
+                        </label>
+
+                        {{ form.name }}
+
+                        {% if form.name.errors %}
+                            <div class="form-error">
+                                {{ form.name.errors|striptags }}
+                            </div>
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label class="form-label">
+                            SKU
+                        </label>
+
+                        {{ form.sku }}
+
+                        {% if form.sku.errors %}
+                            <div class="form-error">
+                                {{ form.sku.errors|striptags }}
+                            </div>
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label class="form-label">
+                            Selling Price
+                            <span class="required">*</span>
+                        </label>
+
+                        {{ form.selling_price }}
+
+                        {% if form.selling_price.errors %}
+                            <div class="form-error">
+                                {{ form.selling_price.errors|striptags }}
+                            </div>
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label class="form-label">
+                            Cost Price
+                            <span class="required">*</span>
+                        </label>
+
+                        {{ form.cost_price }}
+
+                        {% if form.cost_price.errors %}
+                            <div class="form-error">
+                                {{ form.cost_price.errors|striptags }}
+                            </div>
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label class="form-label">
+                            Current Stock
+                        </label>
+
+                        {{ form.stock_quantity }}
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label class="form-label">
+                            Low Stock Alert
+                        </label>
+
+                        {{ form.low_stock_threshold }}
+
+                        <div class="form-help">
+                            Product will be marked low stock when quantity reaches this value.
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label class="form-label">
+                        Description
+                    </label>
+
+                    {{ form.description }}
+
+                </div>
+
+
+                <label class="checkbox-row">
+
+                    {{ form.is_active }}
+
+                    <span>
+
+                        <strong>
+                            Active Product
+                        </strong>
+
+                        <small>
+                            Archived products remain stored but can be excluded from new orders.
+                        </small>
+
+                    </span>
+
+                </label>
+
+            </div>
+
+
+            <div class="form-actions">
+
+                <a
+                    href="{% url 'products:list' %}"
+                    class="btn btn-secondary"
+                >
+                    Cancel
+                </a>
+
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    {{ submit_label }}
+                </button>
+
+            </div>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

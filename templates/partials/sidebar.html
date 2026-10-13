@@ -1,0 +1,197 @@
+<aside class="sidebar" id="sidebar">
+
+    <!-- ===================================================
+         BRAND
+    ==================================================== -->
+
+    <div class="sidebar-brand">
+
+        <div class="brand-mark">
+            OP
+        </div>
+
+        <div class="brand-copy">
+
+            <div class="brand-name">
+                OrderPilot
+            </div>
+
+            <div class="brand-subtitle">
+                Seller Management
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ===================================================
+         NAVIGATION
+    ==================================================== -->
+
+    <nav class="sidebar-nav">
+
+
+        <a
+            href="{% url 'core:dashboard' %}"
+            class="
+                nav-item
+                {% if request.resolver_match.namespace == 'core' and request.resolver_match.url_name == 'dashboard' %}
+                    active
+                {% endif %}
+            "
+        >
+            <span class="nav-icon">
+                ⌂
+            </span>
+
+            <span>
+                Dashboard
+            </span>
+        </a>
+
+
+        <a
+            href="{% url 'orders:list' %}"
+            class="
+                nav-item
+                {% if request.resolver_match.namespace == 'orders' %}
+                    active
+                {% endif %}
+            "
+        >
+            <span class="nav-icon">
+                ◎
+            </span>
+
+            <span>
+                Orders
+            </span>
+        </a>
+
+
+        <a
+            href="{% url 'products:list' %}"
+            class="
+                nav-item
+                {% if request.resolver_match.namespace == 'products' %}
+                    active
+                {% endif %}
+            "
+        >
+            <span class="nav-icon">
+                □
+            </span>
+
+            <span>
+                Products
+            </span>
+        </a>
+
+
+        <a
+            href="{% url 'customers:list' %}"
+            class="
+                nav-item
+                {% if request.resolver_match.namespace == 'customers' %}
+                    active
+                {% endif %}
+            "
+        >
+            <span class="nav-icon">
+                ♙
+            </span>
+
+            <span>
+                Customers
+            </span>
+        </a>
+
+
+        <a
+            href="{% url 'reports:dashboard' %}"
+            class="
+                nav-item
+                {% if request.resolver_match.namespace == 'reports' %}
+                    active
+                {% endif %}
+            "
+        >
+            <span class="nav-icon">
+                ▥
+            </span>
+
+            <span>
+                Reports
+            </span>
+        </a>
+
+
+        <div class="sidebar-nav-divider"></div>
+
+
+        <a
+            href="{% url 'businesses:settings' %}"
+            class="
+                nav-item
+                {% if request.resolver_match.namespace == 'businesses' %}
+                    active
+                {% endif %}
+            "
+        >
+            <span class="nav-icon">
+                ⚙
+            </span>
+
+            <span>
+                Settings
+            </span>
+        </a>
+
+    </nav>
+
+
+    <!-- ===================================================
+         BUSINESS FOOTER
+    ==================================================== -->
+
+    {% if current_business %}
+
+        <div class="sidebar-business">
+
+            <div class="sidebar-business-logo">
+
+                {% if current_business.logo %}
+
+                    <img
+                        src="{{ current_business.logo.url }}"
+                        alt="{{ current_business.name }}"
+                        class="sidebar-business-logo-image"
+                    >
+
+                {% else %}
+
+                    {{ current_business.name|slice:":1"|upper }}
+
+                {% endif %}
+
+            </div>
+
+
+            <div class="sidebar-business-copy">
+
+                <div class="sidebar-business-name">
+                    {{ current_business.name }}
+                </div>
+
+                <div class="sidebar-business-plan">
+                    Starter Plan
+                </div>
+
+            </div>
+
+        </div>
+
+    {% endif %}
+
+</aside>

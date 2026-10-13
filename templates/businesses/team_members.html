@@ -1,0 +1,658 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Team Members | OrderPilot
+{% endblock %}
+
+
+{% block page_heading %}
+Team Members
+{% endblock %}
+
+
+{% block page_subheading %}
+Manage people who have access to this business.
+{% endblock %}
+
+
+{% block content %}
+
+
+<style>
+
+    .team-layout {
+        display: grid;
+
+        grid-template-columns:
+            minmax(0, 1.5fr)
+            minmax(300px, 0.7fr);
+
+        gap: 18px;
+    }
+
+
+    .team-panel {
+        overflow: hidden;
+    }
+
+
+    .team-form-body {
+        padding: 20px 22px 22px;
+    }
+
+
+    .team-add-form {
+        display: grid;
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            minmax(150px, 0.4fr);
+
+        gap: 14px;
+    }
+
+
+    .team-field {
+        min-width: 0;
+    }
+
+
+    .team-field .form-control {
+        width: 100%;
+    }
+
+
+    .team-actions {
+        display: flex;
+        justify-content: flex-end;
+
+        margin-top: 16px;
+    }
+
+
+    .team-help {
+        margin-top: 8px;
+
+        color: var(--text-secondary);
+
+        font-size: 11px;
+        line-height: 1.5;
+    }
+
+
+    .team-table-wrapper {
+        width: 100%;
+        max-width: 100%;
+
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+
+
+    .team-table-wrapper .data-table {
+        width: 100%;
+
+        min-width: 760px;
+    }
+
+
+    .team-table-wrapper .data-table tbody tr:hover {
+        background: transparent;
+    }
+
+
+    .team-table-wrapper .data-table tbody tr:hover td {
+        background: var(--surface-secondary);
+    }
+
+
+    .team-user {
+        display: flex;
+        align-items: center;
+
+        gap: 10px;
+    }
+
+
+    .team-avatar {
+        width: 34px;
+        height: 34px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        flex-shrink: 0;
+
+        border-radius: 50%;
+
+        background: var(--primary);
+
+        color: #ffffff;
+
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+
+    .team-user-info {
+        min-width: 0;
+    }
+
+
+    .team-user-name {
+        color: var(--text-primary);
+
+        font-weight: 650;
+    }
+
+
+    .team-user-email {
+        margin-top: 2px;
+
+        color: var(--text-secondary);
+
+        font-size: 11px;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+
+        white-space: nowrap;
+    }
+
+
+    .team-row-actions {
+        display: flex;
+        align-items: center;
+
+        gap: 8px;
+
+        flex-wrap: wrap;
+    }
+
+
+    .team-role-form {
+        display: flex;
+        align-items: center;
+
+        gap: 8px;
+    }
+
+
+    .team-role-select {
+        min-width: 110px;
+    }
+
+
+    .team-permission-note {
+        padding: 15px 16px;
+
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+
+        background: var(--surface-secondary);
+
+        color: var(--text-secondary);
+
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+
+    @media (max-width: 1000px) {
+
+        .team-layout {
+            grid-template-columns: 1fr;
+        }
+
+    }
+
+
+    @media (max-width: 700px) {
+
+        .team-add-form {
+            grid-template-columns: 1fr;
+        }
+
+
+        .team-actions .btn {
+            width: 100%;
+        }
+
+    }
+
+</style>
+
+
+
+{% if messages %}
+
+    {% for message in messages %}
+
+        <div
+            class="
+                alert
+                {% if message.tags == 'error' %}
+                    alert-danger
+                {% elif message.tags %}
+                    alert-{{ message.tags }}
+                {% endif %}
+            "
+        >
+            {{ message }}
+        </div>
+
+    {% endfor %}
+
+{% endif %}
+
+
+
+<div class="team-layout">
+
+
+    {# ================================================= #}
+    {# MEMBERS LIST                                      #}
+    {# ================================================= #}
+
+    <section class="panel team-panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Team
+                </h2>
+
+                <p>
+                    Active and archived members of {{ business.name }}.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="team-table-wrapper">
+
+            <table class="data-table">
+
+                <thead>
+
+                    <tr>
+                        <th>Member</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Joined</th>
+                        <th>Actions</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for member in members %}
+
+                        <tr>
+
+                            <td>
+
+                                <div class="team-user">
+
+                                    <div class="team-avatar">
+
+                                        {% if member.user.first_name %}
+                                            {{ member.user.first_name|slice:":1"|upper }}
+                                        {% else %}
+                                            {{ member.user.username|slice:":1"|upper }}
+                                        {% endif %}
+
+                                    </div>
+
+
+                                    <div class="team-user-info">
+
+                                        <div class="team-user-name">
+
+                                            {% if member.user.get_full_name %}
+                                                {{ member.user.get_full_name }}
+                                            {% else %}
+                                                {{ member.user.username }}
+                                            {% endif %}
+
+                                            {% if member.user == request.user %}
+                                                (You)
+                                            {% endif %}
+
+                                        </div>
+
+
+                                        <div class="team-user-email">
+
+                                            {% if member.user.email %}
+                                                {{ member.user.email }}
+                                            {% else %}
+                                                @{{ member.user.username }}
+                                            {% endif %}
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </td>
+
+
+                            <td>
+                                {{ member.get_role_display }}
+                            </td>
+
+
+                            <td>
+
+                                {% if member.is_active %}
+
+                                    {% include "components/badge.html" with text="Active" type="success" %}
+
+                                {% else %}
+
+                                    {% include "components/badge.html" with text="Archived" type="neutral" %}
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+                                {{ member.created_at|date:"d M Y" }}
+                            </td>
+
+
+                            <td>
+
+                                {% if can_manage_team %}
+
+                                    <div class="team-row-actions">
+
+
+                                        {% if member.is_active %}
+
+
+                                            {% if membership.role == "owner" and member.role != "owner" and member.user != request.user %}
+
+                                                <form
+                                                    method="post"
+                                                    action="{% url 'businesses:team_role_update' member.pk %}"
+                                                    class="team-role-form"
+                                                >
+
+                                                    {% csrf_token %}
+
+                                                    <select
+                                                        name="role"
+                                                        class="form-control team-role-select"
+                                                    >
+
+                                                        <option
+                                                            value="admin"
+                                                            {% if member.role == "admin" %}selected{% endif %}
+                                                        >
+                                                            Admin
+                                                        </option>
+
+                                                        <option
+                                                            value="staff"
+                                                            {% if member.role == "staff" %}selected{% endif %}
+                                                        >
+                                                            Staff
+                                                        </option>
+
+                                                    </select>
+
+
+                                                    <button
+                                                        type="submit"
+                                                        class="btn btn-secondary btn-small"
+                                                    >
+                                                        Save
+                                                    </button>
+
+                                                </form>
+
+                                            {% endif %}
+
+
+                                            {% if member.user != request.user and member.role != "owner" %}
+
+                                                {% if membership.role == "owner" or member.role == "staff" %}
+
+                                                    <form
+                                                        method="post"
+                                                        action="{% url 'businesses:team_deactivate' member.pk %}"
+                                                        onsubmit="return confirm('Deactivate this team member?');"
+                                                    >
+
+                                                        {% csrf_token %}
+
+                                                        <button
+                                                            type="submit"
+                                                            class="btn btn-danger btn-small"
+                                                        >
+                                                            Deactivate
+                                                        </button>
+
+                                                    </form>
+
+                                                {% endif %}
+
+                                            {% endif %}
+
+
+                                        {% else %}
+
+
+                                            {% if membership.role == "owner" or member.role == "staff" %}
+
+                                                <form
+                                                    method="post"
+                                                    action="{% url 'businesses:team_restore' member.pk %}"
+                                                >
+
+                                                    {% csrf_token %}
+
+                                                    <button
+                                                        type="submit"
+                                                        class="btn btn-primary btn-small"
+                                                    >
+                                                        Restore
+                                                    </button>
+
+                                                </form>
+
+                                            {% endif %}
+
+                                        {% endif %}
+
+
+                                        {% if member.role == "owner" %}
+
+                                            <span class="badge badge-neutral">
+                                                Protected
+                                            </span>
+
+                                        {% endif %}
+
+                                    </div>
+
+                                {% else %}
+
+                                    <span class="badge badge-neutral">
+                                        View Only
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                    {% empty %}
+
+                        <tr>
+
+                            <td colspan="5">
+                                No team members found.
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+
+    {# ================================================= #}
+    {# ADD MEMBER                                        #}
+    {# ================================================= #}
+
+    <section class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Add Team Member
+                </h2>
+
+                <p>
+                    Add an existing OrderPilot user.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="team-form-body">
+
+            {% if can_manage_team %}
+
+                <form
+                    method="post"
+                    action="{% url 'businesses:team_add' %}"
+                >
+
+                    {% csrf_token %}
+
+
+                    {% if add_form.non_field_errors %}
+
+                        <div class="alert alert-danger">
+                            {{ add_form.non_field_errors }}
+                        </div>
+
+                    {% endif %}
+
+
+                    <div class="team-add-form">
+
+                        <div class="team-field">
+
+                            <label
+                                for="{{ add_form.user_identifier.id_for_label }}"
+                                class="form-label"
+                            >
+                                Username or Email
+                            </label>
+
+                            {{ add_form.user_identifier }}
+
+                            {% if add_form.user_identifier.errors %}
+
+                                <div class="form-error">
+                                    {{ add_form.user_identifier.errors|striptags }}
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="team-field">
+
+                            <label
+                                for="{{ add_form.role.id_for_label }}"
+                                class="form-label"
+                            >
+                                Role
+                            </label>
+
+                            {{ add_form.role }}
+
+                            {% if add_form.role.errors %}
+
+                                <div class="form-error">
+                                    {{ add_form.role.errors|striptags }}
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="team-help">
+
+                        The user must already have a Django / OrderPilot account.
+
+                        {% if membership.role == "admin" %}
+                            As an Admin, you can only add Staff members.
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="team-actions">
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary"
+                        >
+                            Add Member
+                        </button>
+
+                    </div>
+
+                </form>
+
+            {% else %}
+
+                <div class="team-permission-note">
+                    You have read-only access to the team.
+                    Only owners and admins can manage members.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+</div>
+
+
+{% endblock %}

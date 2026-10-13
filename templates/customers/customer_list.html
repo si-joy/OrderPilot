@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}
+Customers | OrderPilot
+{% endblock %}
+
+{% block page_heading %}
+Customers
+{% endblock %}
+
+{% block page_subheading %}
+Manage customer information and contact details.
+{% endblock %}
+
+
+{% block content %}
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-success">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+
+<div class="page-toolbar">
+
+    <form
+        method="get"
+        action="{% url 'customers:list' %}"
+        class="customer-filter-form"
+        hx-get="{% url 'customers:list' %}"
+        hx-target="#customerTableArea"
+        hx-trigger="keyup changed delay:400ms from:#customerSearch, change from:#customerStatus"
+        hx-push-url="true"
+    >
+
+        <input
+            id="customerSearch"
+            type="search"
+            name="q"
+            value="{{ query }}"
+            class="form-control search-input"
+            placeholder="Search name, phone, email..."
+        >
+
+        <select
+            id="customerStatus"
+            name="status"
+            class="form-control status-select"
+        >
+            <option value="active" {% if status == "active" %}selected{% endif %}>
+                Active
+            </option>
+
+            <option value="inactive" {% if status == "inactive" %}selected{% endif %}>
+                Archived
+            </option>
+
+            <option value="all" {% if status == "all" %}selected{% endif %}>
+                All Customers
+            </option>
+        </select>
+
+    </form>
+
+
+    <a
+        href="{% url 'customers:create' %}"
+        class="btn btn-primary"
+    >
+        + Add Customer
+    </a>
+
+</div>
+
+
+<div id="customerTableArea">
+
+    {% include "customers/partials/customer_table.html" %}
+
+</div>
+
+{% endblock %}

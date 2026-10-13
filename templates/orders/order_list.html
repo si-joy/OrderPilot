@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}
+Orders | OrderPilot
+{% endblock %}
+
+{% block page_heading %}
+Orders
+{% endblock %}
+
+{% block page_subheading %}
+Manage customer orders and payments.
+{% endblock %}
+
+
+{% block content %}
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-success">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+
+<div class="page-toolbar">
+
+    <div></div>
+
+    <a
+        href="{% url 'orders:create' %}"
+        class="btn btn-primary"
+    >
+        + Create Order
+    </a>
+
+</div>
+
+
+{% if orders %}
+
+<div class="table-wrapper">
+
+    <table class="data-table">
+
+        <thead>
+            <tr>
+                <th>Order</th>
+                <th>Customer</th>
+                <th>Status</th>
+                <th>Payment</th>
+                <th>Total</th>
+                <th>Due</th>
+                <th>Created</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for order in orders %}
+
+                <tr>
+
+                    <td>
+                        <a
+                            href="{% url 'orders:detail' order.pk %}"
+                            class="order-number-link"
+                        >
+                            {{ order.order_number }}
+                        </a>
+                    </td>
+
+                    <td>
+                        {{ order.customer.full_name }}
+                    </td>
+
+                    <td>
+                        {{ order.get_status_display }}
+                    </td>
+
+                    <td>
+                        {{ order.get_payment_status_display }}
+                    </td>
+
+                    <td>
+                        ৳{{ order.total_amount }}
+                    </td>
+
+                    <td>
+                        ৳{{ order.due_amount }}
+                    </td>
+
+                    <td>
+                        {{ order.created_at|date:"d M Y" }}
+                    </td>
+
+                    <td>
+                        <a
+                            href="{% url 'orders:detail' order.pk %}"
+                            class="table-action"
+                        >
+                            View
+                        </a>
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+
+{% else %}
+
+<div class="panel">
+
+    <div class="empty-state">
+
+        <div class="empty-icon">
+            ◎
+        </div>
+
+        <h3>No orders yet</h3>
+
+        <p>
+            Create your first customer order.
+        </p>
+
+        <a
+            href="{% url 'orders:create' %}"
+            class="btn btn-primary"
+        >
+            Create Order
+        </a>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+{% endblock %}

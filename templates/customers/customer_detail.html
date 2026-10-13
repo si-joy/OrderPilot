@@ -1,0 +1,522 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+{{ customer.full_name }} | OrderPilot
+{% endblock %}
+
+
+{% block page_heading %}
+{{ customer.full_name }}
+{% endblock %}
+
+
+{% block page_subheading %}
+Customer profile and purchase activity.
+{% endblock %}
+
+
+{% block content %}
+
+
+{% if messages %}
+
+    {% for message in messages %}
+
+        <div
+            class="
+                alert
+                {% if message.tags == 'error' %}
+                    alert-danger
+                {% elif message.tags %}
+                    alert-{{ message.tags }}
+                {% endif %}
+            "
+        >
+            {{ message }}
+        </div>
+
+    {% endfor %}
+
+{% endif %}
+
+
+<div class="detail-toolbar">
+
+    <a
+        href="{% url 'customers:list' %}"
+        class="btn btn-ghost"
+    >
+        ← Back to Customers
+    </a>
+
+
+    <div class="detail-actions">
+
+        <a
+            href="{% url 'customers:update' customer.pk %}"
+            class="btn btn-secondary"
+        >
+            Edit Customer
+        </a>
+
+
+        {% if customer.is_active %}
+
+            <form
+                method="post"
+                action="{% url 'customers:archive' customer.pk %}"
+                onsubmit="return confirm('Archive this customer?');"
+            >
+
+                {% csrf_token %}
+
+                <button
+                    type="submit"
+                    class="btn btn-danger"
+                >
+                    Archive
+                </button>
+
+            </form>
+
+        {% else %}
+
+            <form
+                method="post"
+                action="{% url 'customers:restore' customer.pk %}"
+            >
+
+                {% csrf_token %}
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    Restore Customer
+                </button>
+
+            </form>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<div class="detail-grid">
+
+
+    {# ================================================= #}
+    {# CUSTOMER INFORMATION                              #}
+    {# ================================================= #}
+
+    <section class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Customer Information
+                </h2>
+
+                <p>
+                    Basic contact and delivery information.
+                </p>
+
+            </div>
+
+
+            {% if customer.is_active %}
+
+                {% include "components/badge.html" with text="Active" type="success" %}
+
+            {% else %}
+
+                {% include "components/badge.html" with text="Archived" type="neutral" %}
+
+            {% endif %}
+
+        </div>
+
+
+        <div class="detail-list">
+
+            <div class="detail-row">
+
+                <span>
+                    Full Name
+                </span>
+
+                <strong>
+                    {{ customer.full_name }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Phone
+                </span>
+
+                <strong>
+                    {{ customer.phone }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Email
+                </span>
+
+                <strong>
+                    {{ customer.email|default:"—" }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    City
+                </span>
+
+                <strong>
+                    {{ customer.city|default:"—" }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    District
+                </span>
+
+                <strong>
+                    {{ customer.district|default:"—" }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row detail-row-stack">
+
+                <span>
+                    Address
+                </span>
+
+                <strong>
+                    {{ customer.address|default:"No address provided." }}
+                </strong>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    {# ================================================= #}
+    {# CUSTOMER SUMMARY                                  #}
+    {# ================================================= #}
+
+    <section class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Customer Summary
+                </h2>
+
+                <p>
+                    Order and payment activity.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="detail-list">
+
+            <div class="detail-row">
+
+                <span>
+                    Total Orders
+                </span>
+
+                <strong>
+                    {{ total_orders }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Total Spent
+                </span>
+
+                <strong>
+                    ৳{{ total_spent|floatformat:2 }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Total Paid
+                </span>
+
+                <strong>
+                    ৳{{ total_paid|floatformat:2 }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Outstanding Due
+                </span>
+
+                <strong>
+                    ৳{{ total_due|floatformat:2 }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Created
+                </span>
+
+                <strong>
+                    {{ customer.created_at|date:"d M Y" }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Last Updated
+                </span>
+
+                <strong>
+                    {{ customer.updated_at|date:"d M Y" }}
+                </strong>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+<div style="height:18px;"></div>
+
+
+{# ===================================================== #}
+{# PURCHASE HISTORY                                      #}
+{# ===================================================== #}
+
+<section class="panel detail-table-panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                Purchase History
+            </h2>
+
+            <p>
+                Orders placed by this customer.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="detail-table-wrapper">
+
+        <table class="data-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Order
+                    </th>
+
+                    <th>
+                        Date
+                    </th>
+
+                    <th>
+                        Status
+                    </th>
+
+                    <th>
+                        Total
+                    </th>
+
+                    <th>
+                        Paid
+                    </th>
+
+                    <th>
+                        Due
+                    </th>
+
+                    <th>
+                        Action
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+                {% for order in orders %}
+
+                    <tr>
+
+                        <td>
+
+                            <a
+                                href="{% url 'orders:detail' order.pk %}"
+                                class="table-action"
+                            >
+                                {{ order.order_number }}
+                            </a>
+
+                        </td>
+
+
+                        <td>
+                            {{ order.created_at|date:"d M Y" }}
+                        </td>
+
+
+                        <td>
+                            {{ order.get_status_display }}
+                        </td>
+
+
+                        <td>
+                            ৳{{ order.total_amount }}
+                        </td>
+
+
+                        <td>
+                            ৳{{ order.paid_amount }}
+                        </td>
+
+
+                        <td>
+                            ৳{{ order.due_amount }}
+                        </td>
+
+
+                        <td>
+
+                            <a
+                                href="{% url 'orders:detail' order.pk %}"
+                                class="table-action"
+                            >
+                                View Order
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                {% empty %}
+
+                    <tr>
+
+                        <td
+                            colspan="7"
+                            class="detail-table-empty"
+                        >
+                            No purchase history available.
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+
+
+{% if customer.notes %}
+
+    <div style="height:18px;"></div>
+
+
+    {# ================================================= #}
+    {# NOTES                                             #}
+    {# ================================================= #}
+
+    <section class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Notes
+                </h2>
+
+                <p>
+                    Internal customer notes.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="customer-notes">
+            {{ customer.notes|linebreaksbr }}
+        </div>
+
+    </section>
+
+{% endif %}
+
+
+{% endblock %}

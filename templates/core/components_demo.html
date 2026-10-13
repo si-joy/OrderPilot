@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}
+Components | OrderPilot
+{% endblock %}
+
+{% block page_heading %}
+UI Components
+{% endblock %}
+
+{% block page_subheading %}
+Reusable OrderPilot interface elements.
+{% endblock %}
+
+{% block content %}
+
+<div class="panel">
+    <div class="panel-header">
+        <div>
+            <h2>Buttons</h2>
+            <p>Reusable action buttons.</p>
+        </div>
+    </div>
+
+    <div style="padding: 22px; display:flex; gap:12px; flex-wrap:wrap;">
+
+        {% include "components/button.html" with label="Primary" variant="primary" %}
+
+        {% include "components/button.html" with label="Secondary" variant="secondary" %}
+
+        {% include "components/button.html" with label="Ghost" variant="ghost" %}
+
+        {% include "components/button.html" with label="Delete" variant="danger" %}
+
+    </div>
+</div>
+
+
+<div style="height: 20px;"></div>
+
+
+<div class="panel">
+    <div class="panel-header">
+        <div>
+            <h2>Badges</h2>
+            <p>Status indicators.</p>
+        </div>
+    </div>
+
+    <div style="padding: 22px; display:flex; gap:10px; flex-wrap:wrap;">
+
+        {% include "components/badge.html" with text="Pending" type="warning" %}
+
+        {% include "components/badge.html" with text="Delivered" type="success" %}
+
+        {% include "components/badge.html" with text="Returned" type="danger" %}
+
+        {% include "components/badge.html" with text="Processing" type="primary" %}
+
+    </div>
+</div>
+
+
+<div style="height: 20px;"></div>
+
+
+{% include "components/alert.html" with title="Everything looks good" message="OrderPilot UI components are working correctly." type="success" %}
+
+
+<div class="table-wrapper">
+
+    <table class="data-table">
+
+        <thead>
+            <tr>
+                <th>Order</th>
+                <th>Customer</th>
+                <th>Status</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            <tr>
+                <td>#OP-1001</td>
+                <td>Demo Customer</td>
+
+                <td>
+                    {% include "components/badge.html" with text="Delivered" type="success" %}
+                </td>
+
+                <td>৳1,500</td>
+            </tr>
+
+            <tr>
+                <td>#OP-1002</td>
+                <td>Example Customer</td>
+
+                <td>
+                    {% include "components/badge.html" with text="Pending" type="warning" %}
+                </td>
+
+                <td>৳2,200</td>
+            </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}

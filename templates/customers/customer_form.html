@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ page_title }} | OrderPilot
+{% endblock %}
+
+{% block page_heading %}
+{{ page_title }}
+{% endblock %}
+
+{% block page_subheading %}
+Add or update customer information.
+{% endblock %}
+
+
+{% block content %}
+
+<div class="form-page">
+
+    <form method="post">
+
+        {% csrf_token %}
+
+
+        {% if form.non_field_errors %}
+
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+
+        {% endif %}
+
+
+        <div class="panel">
+
+            <div class="panel-header">
+
+                <div>
+                    <h2>Customer Information</h2>
+
+                    <p>
+                        Enter basic customer contact details.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="form-section">
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+
+                        <label
+                            for="{{ form.full_name.id_for_label }}"
+                            class="form-label"
+                        >
+                            Full Name
+                            <span class="required">*</span>
+                        </label>
+
+                        {{ form.full_name }}
+
+                        {% if form.full_name.errors %}
+                            <div class="form-error">
+                                {{ form.full_name.errors|striptags }}
+                            </div>
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label
+                            for="{{ form.phone.id_for_label }}"
+                            class="form-label"
+                        >
+                            Phone
+                            <span class="required">*</span>
+                        </label>
+
+                        {{ form.phone }}
+
+                        {% if form.phone.errors %}
+                            <div class="form-error">
+                                {{ form.phone.errors|striptags }}
+                            </div>
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label
+                            for="{{ form.email.id_for_label }}"
+                            class="form-label"
+                        >
+                            Email
+                        </label>
+
+                        {{ form.email }}
+
+                        {% if form.email.errors %}
+                            <div class="form-error">
+                                {{ form.email.errors|striptags }}
+                            </div>
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label
+                            for="{{ form.city.id_for_label }}"
+                            class="form-label"
+                        >
+                            City
+                        </label>
+
+                        {{ form.city }}
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label
+                            for="{{ form.district.id_for_label }}"
+                            class="form-label"
+                        >
+                            District
+                        </label>
+
+                        {{ form.district }}
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label
+                        for="{{ form.address.id_for_label }}"
+                        class="form-label"
+                    >
+                        Address
+                    </label>
+
+                    {{ form.address }}
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label
+                        for="{{ form.notes.id_for_label }}"
+                        class="form-label"
+                    >
+                        Notes
+                    </label>
+
+                    {{ form.notes }}
+
+                </div>
+
+
+                <label class="checkbox-row">
+
+                    {{ form.is_active }}
+
+                    <span>
+
+                        <strong>
+                            Active Customer
+                        </strong>
+
+                        <small>
+                            Inactive customers will remain saved but can be excluded from future workflows.
+                        </small>
+
+                    </span>
+
+                </label>
+
+
+            </div>
+
+
+            <div class="form-actions">
+
+                <a
+                    href="{% url 'customers:list' %}"
+                    class="btn btn-secondary"
+                >
+                    Cancel
+                </a>
+
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    {{ submit_label }}
+                </button>
+
+            </div>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

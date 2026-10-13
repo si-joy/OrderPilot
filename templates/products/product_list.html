@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}
+Products | OrderPilot
+{% endblock %}
+
+{% block page_heading %}
+Products
+{% endblock %}
+
+{% block page_subheading %}
+Manage products, prices and stock.
+{% endblock %}
+
+
+{% block content %}
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-success">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+
+<div class="page-toolbar">
+
+    <form
+        method="get"
+        action="{% url 'products:list' %}"
+        class="product-filter-form"
+
+        hx-get="{% url 'products:list' %}"
+        hx-target="#productTableArea"
+
+        hx-trigger="
+            keyup changed delay:400ms from:#productSearch,
+            change from:#productStatus,
+            change from:#productStock
+        "
+
+        hx-push-url="true"
+    >
+
+        <input
+            id="productSearch"
+            type="search"
+            name="q"
+            value="{{ query }}"
+
+            class="form-control search-input"
+
+            placeholder="Search product or SKU..."
+        >
+
+
+        <select
+            id="productStatus"
+            name="status"
+            class="form-control filter-select"
+        >
+
+            <option
+                value="active"
+                {% if status == "active" %}selected{% endif %}
+            >
+                Active
+            </option>
+
+            <option
+                value="inactive"
+                {% if status == "inactive" %}selected{% endif %}
+            >
+                Archived
+            </option>
+
+            <option
+                value="all"
+                {% if status == "all" %}selected{% endif %}
+            >
+                All Products
+            </option>
+
+        </select>
+
+
+        <select
+            id="productStock"
+            name="stock"
+            class="form-control filter-select"
+        >
+
+            <option
+                value="all"
+                {% if stock == "all" %}selected{% endif %}
+            >
+                All Stock
+            </option>
+
+            <option
+                value="low"
+                {% if stock == "low" %}selected{% endif %}
+            >
+                Low Stock
+            </option>
+
+            <option
+                value="out"
+                {% if stock == "out" %}selected{% endif %}
+            >
+                Out of Stock
+            </option>
+
+        </select>
+
+    </form>
+
+
+    <a
+        href="{% url 'products:create' %}"
+        class="btn btn-primary"
+    >
+        + Add Product
+    </a>
+
+</div>
+
+
+<div id="productTableArea">
+
+    {% include "products/partials/product_table.html" %}
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,484 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Profile | OrderPilot
+{% endblock %}
+
+
+{% block page_heading %}
+Profile
+{% endblock %}
+
+
+{% block page_subheading %}
+Manage your personal information and account security.
+{% endblock %}
+
+
+{% block content %}
+
+
+{% if messages %}
+
+    {% for message in messages %}
+
+        <div
+            class="
+                alert
+                {% if message.tags == 'error' %}
+                    alert-danger
+                {% elif message.tags %}
+                    alert-{{ message.tags }}
+                {% endif %}
+            "
+        >
+            {{ message }}
+        </div>
+
+    {% endfor %}
+
+{% endif %}
+
+
+<div class="profile-layout">
+
+
+    <section class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Profile Information
+                </h2>
+
+                <p>
+                    Update your name, contact details and profile photo.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <form
+            method="post"
+            enctype="multipart/form-data"
+        >
+
+            {% csrf_token %}
+
+
+            <div class="profile-form-body">
+
+
+                <div class="profile-avatar-section">
+
+                    <div class="profile-avatar-preview">
+
+                        {% if profile.avatar %}
+
+                            <img
+                                src="{{ profile.avatar.url }}"
+                                alt="{{ request.user.username }}"
+                                id="avatarPreviewImage"
+                            >
+
+                        {% else %}
+
+                            <span id="avatarPreviewFallback">
+
+                                {% if request.user.first_name %}
+
+                                    {{ request.user.first_name|slice:":1"|upper }}
+
+                                {% else %}
+
+                                    {{ request.user.username|slice:":1"|upper }}
+
+                                {% endif %}
+
+                            </span>
+
+                            <img
+                                src=""
+                                alt=""
+                                id="avatarPreviewImage"
+                                style="display:none;"
+                            >
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="profile-avatar-controls">
+
+                        <label class="btn btn-secondary profile-upload-button">
+
+                            Upload Photo
+
+                            {{ form.avatar }}
+
+                        </label>
+
+
+                        {% if profile.avatar %}
+
+                            <label class="profile-remove-avatar">
+
+                                {{ form.remove_avatar }}
+
+                                <span>
+                                    Remove current photo
+                                </span>
+
+                            </label>
+
+                        {% endif %}
+
+
+                        <div class="profile-help">
+                            JPG, PNG or WebP. Maximum file size 2 MB.
+                        </div>
+
+
+                        {% if form.avatar.errors %}
+
+                            <div class="form-error">
+                                {{ form.avatar.errors|striptags }}
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="profile-divider"></div>
+
+
+                <div class="profile-form-grid">
+
+
+                    <div class="profile-field">
+
+                        <label class="form-label">
+                            Username
+                        </label>
+
+                        <input
+                            type="text"
+                            class="form-control"
+                            value="{{ request.user.username }}"
+                            disabled
+                        >
+
+                        <div class="profile-help">
+                            Username cannot be changed here.
+                        </div>
+
+                    </div>
+
+
+                    <div class="profile-field">
+
+                        <label
+                            for="{{ form.phone.id_for_label }}"
+                            class="form-label"
+                        >
+                            Phone
+                        </label>
+
+                        {{ form.phone }}
+
+                        {% if form.phone.errors %}
+
+                            <div class="form-error">
+                                {{ form.phone.errors|striptags }}
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="profile-field">
+
+                        <label
+                            for="{{ form.first_name.id_for_label }}"
+                            class="form-label"
+                        >
+                            First Name
+                        </label>
+
+                        {{ form.first_name }}
+
+                        {% if form.first_name.errors %}
+
+                            <div class="form-error">
+                                {{ form.first_name.errors|striptags }}
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="profile-field">
+
+                        <label
+                            for="{{ form.last_name.id_for_label }}"
+                            class="form-label"
+                        >
+                            Last Name
+                        </label>
+
+                        {{ form.last_name }}
+
+                        {% if form.last_name.errors %}
+
+                            <div class="form-error">
+                                {{ form.last_name.errors|striptags }}
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="profile-field profile-field-full">
+
+                        <label
+                            for="{{ form.email.id_for_label }}"
+                            class="form-label"
+                        >
+                            Email
+                        </label>
+
+                        {{ form.email }}
+
+                        {% if form.email.errors %}
+
+                            <div class="form-error">
+                                {{ form.email.errors|striptags }}
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div class="profile-actions">
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        Save Changes
+                    </button>
+
+                </div>
+
+            </div>
+
+        </form>
+
+    </section>
+
+
+
+    <section class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Account Summary
+                </h2>
+
+                <p>
+                    Your OrderPilot account information.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="detail-list profile-summary">
+
+            <div class="detail-row">
+
+                <span>
+                    Username
+                </span>
+
+                <strong>
+                    {{ request.user.username }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Email
+                </span>
+
+                <strong>
+                    {{ request.user.email|default:"—" }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Joined
+                </span>
+
+                <strong>
+                    {{ request.user.date_joined|date:"d M Y" }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Last Login
+                </span>
+
+                <strong>
+                    {{ request.user.last_login|date:"d M Y, h:i A" }}
+                </strong>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+<div style="height:18px;"></div>
+
+
+<section class="panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                Security
+            </h2>
+
+            <p>
+                Manage your password and sign-in security.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="profile-security-body">
+
+        <a
+            href="{% url 'core:password_change' %}"
+            class="btn btn-secondary"
+        >
+            Change Password
+        </a>
+
+    </div>
+
+</section>
+
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const input =
+            document.querySelector(
+                ".profile-avatar-input"
+            );
+
+        const image =
+            document.getElementById(
+                "avatarPreviewImage"
+            );
+
+        const fallback =
+            document.getElementById(
+                "avatarPreviewFallback"
+            );
+
+
+        if (!input || !image) {
+            return;
+        }
+
+
+        input.addEventListener(
+            "change",
+            function () {
+
+                const file =
+                    input.files[0];
+
+                if (!file) {
+                    return;
+                }
+
+
+                const reader =
+                    new FileReader();
+
+
+                reader.onload = function (event) {
+
+                    image.src =
+                        event.target.result;
+
+                    image.style.display =
+                        "block";
+
+
+                    if (fallback) {
+                        fallback.style.display =
+                            "none";
+                    }
+
+                };
+
+
+                reader.readAsDataURL(
+                    file
+                );
+
+            }
+        );
+
+    }
+);
+
+</script>
+
+
+{% endblock %}
