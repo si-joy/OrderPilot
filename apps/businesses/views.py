@@ -68,17 +68,14 @@ def business_settings(request):
         request.user
     )
 
-    membership = (
-        get_current_membership(
-            request.user,
-            business,
-        )
+    membership = get_current_membership(
+        request.user,
+        business,
     )
 
     can_edit = bool(
         membership
-        and
-        membership.role
+        and membership.role
         in {
             BusinessMember.ROLE_OWNER,
             BusinessMember.ROLE_ADMIN,
@@ -88,6 +85,7 @@ def business_settings(request):
     if request.method == "POST":
 
         if not can_edit:
+
             messages.error(
                 request,
                 (
@@ -100,6 +98,11 @@ def business_settings(request):
                 "businesses:settings"
             )
 
+        old_logo = None
+
+        if business.logo:
+            old_logo = business.logo
+
         form = BusinessSettingsForm(
             request.POST,
             request.FILES,
@@ -108,47 +111,30 @@ def business_settings(request):
 
         if form.is_valid():
 
-            old_logo_name = (
-                business.logo.name
-                if business.logo
-                else None
-            )
+            updated_business = form.save()
 
-            updated_business = (
-                form.save(
-                    commit=False
-                )
-            )
+            # =============================================
+            # DELETE OLD LOGO SAFELY
+            # Local storage + Cloudinary compatible
+            # =============================================
 
-            updated_business.save()
-
-            new_logo_name = (
-                updated_business.logo.name
-                if updated_business.logo
-                else None
-            )
-
-            # If a new logo replaced the old
-            # logo, delete the old physical
-            # file after successful save.
             if (
-                old_logo_name
-                and
-                new_logo_name
-                and
-                old_logo_name
-                != new_logo_name
+                old_logo
+                and old_logo.name
+                and updated_business.logo
+                and updated_business.logo.name
+                and old_logo.name
+                != updated_business.logo.name
             ):
-                storage = (
-                    updated_business.logo.storage
-                )
 
-                if storage.exists(
-                    old_logo_name
-                ):
-                    storage.delete(
-                        old_logo_name
+                try:
+
+                    old_logo.storage.delete(
+                        old_logo.name
                     )
+
+                except Exception:
+                    pass
 
             messages.success(
                 request,
@@ -180,7 +166,6 @@ def business_settings(request):
         "businesses/settings.html",
         context,
     )
-
 
 # =========================================================
 # TEAM MEMBERS
