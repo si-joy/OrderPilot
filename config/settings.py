@@ -25,7 +25,6 @@ SECRET_KEY = os.getenv(
     "django-insecure-dev-key",
 )
 
-
 DEBUG = (
     os.getenv(
         "DEBUG",
@@ -33,7 +32,6 @@ DEBUG = (
     ).lower()
     == "true"
 )
-
 
 IS_VERCEL = (
     os.getenv(
@@ -54,19 +52,16 @@ ALLOWED_HOSTS = [
     ".vercel.app",
 ]
 
-
 extra_hosts = os.getenv(
     "ALLOWED_HOSTS",
     "",
 )
 
 if extra_hosts:
-
     ALLOWED_HOSTS.extend(
         [
             host.strip()
-            for host
-            in extra_hosts.split(",")
+            for host in extra_hosts.split(",")
             if host.strip()
         ]
     )
@@ -80,19 +75,16 @@ CSRF_TRUSTED_ORIGINS = [
     "https://*.vercel.app",
 ]
 
-
 extra_csrf_origins = os.getenv(
     "CSRF_TRUSTED_ORIGINS",
     "",
 )
 
 if extra_csrf_origins:
-
     CSRF_TRUSTED_ORIGINS.extend(
         [
             origin.strip()
-            for origin
-            in extra_csrf_origins.split(",")
+            for origin in extra_csrf_origins.split(",")
             if origin.strip()
         ]
     )
@@ -112,11 +104,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 
-
     # Cloudinary
     "cloudinary_storage",
     "cloudinary",
-
 
     # Project Apps
     "apps.core.apps.CoreConfig",
@@ -136,7 +126,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
 
-    # Static files in production
     "whitenoise.middleware.WhiteNoiseMiddleware",
 
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -173,21 +162,15 @@ TEMPLATES = [
             BASE_DIR / "templates",
         ],
 
-        "APP_DIRS":
-            True,
+        "APP_DIRS": True,
 
         "OPTIONS": {
-
             "context_processors": [
-
                 "django.template.context_processors.request",
-
                 "django.contrib.auth.context_processors.auth",
-
                 "django.contrib.messages.context_processors.messages",
 
                 "apps.businesses.context_processors.current_business_context",
-
                 "apps.notifications.context_processors.notification_context",
             ],
         },
@@ -207,23 +190,17 @@ DATABASE_URL = os.getenv(
 if DATABASE_URL:
 
     DATABASES = {
-
-        "default":
-            dj_database_url.parse(
-                DATABASE_URL,
-                conn_max_age=60,
-                conn_health_checks=True,
-            )
-
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=60,
+            conn_health_checks=True,
+        )
     }
-
 
 else:
 
     DATABASES = {
-
         "default": {
-
             "ENGINE":
                 "django.db.backends.postgresql",
 
@@ -289,7 +266,6 @@ AUTH_PASSWORD_VALIDATORS = [
             "django.contrib.auth.password_validation."
             "NumericPasswordValidator",
     },
-
 ]
 
 
@@ -312,11 +288,9 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 
-
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
-
 
 STATIC_ROOT = (
     BASE_DIR
@@ -330,7 +304,6 @@ STATIC_ROOT = (
 
 MEDIA_URL = "/media/"
 
-
 CLOUDINARY_URL = os.getenv(
     "CLOUDINARY_URL",
 )
@@ -341,56 +314,43 @@ if CLOUDINARY_URL:
     STORAGES = {
 
         "default": {
-
             "BACKEND":
                 "cloudinary_storage.storage."
                 "MediaCloudinaryStorage",
-
         },
 
         "staticfiles": {
-
             "BACKEND":
                 "whitenoise.storage."
                 "CompressedManifestStaticFilesStorage",
-
         },
-
     }
-
 
 else:
 
-    # Local development
     MEDIA_ROOT = (
         BASE_DIR
         / "media"
     )
 
-
     STORAGES = {
 
         "default": {
-
             "BACKEND":
                 "django.core.files.storage."
                 "FileSystemStorage",
-
         },
 
         "staticfiles": {
-
             "BACKEND":
                 "whitenoise.storage."
                 "CompressedManifestStaticFilesStorage",
-
         },
-
     }
 
 
 # =========================================================
-# AUTHENTICATION
+# AUTH
 # =========================================================
 
 LOGIN_URL = "/login/"
@@ -408,7 +368,6 @@ EMAIL_BACKEND = os.getenv(
     "EMAIL_BACKEND",
     "django.core.mail.backends.console.EmailBackend",
 )
-
 
 DEFAULT_FROM_EMAIL = os.getenv(
     "DEFAULT_FROM_EMAIL",
@@ -435,36 +394,22 @@ if IS_VERCEL or not DEBUG:
 
     CSRF_COOKIE_SECURE = True
 
-
     SECURE_SSL_REDIRECT = True
-
 
     SECURE_PROXY_SSL_HEADER = (
         "HTTP_X_FORWARDED_PROTO",
         "https",
     )
 
-
     SECURE_CONTENT_TYPE_NOSNIFF = True
-
 
     X_FRAME_OPTIONS = "DENY"
 
-
-    SECURE_REFERRER_POLICY = (
-        "same-origin"
-    )
+    SECURE_REFERRER_POLICY = "same-origin"
 
 
 # =========================================================
 # HSTS
-# =========================================================
-#
-# Enable HSTS only in production.
-#
-# During the first deploy we keep it relatively conservative.
-# After confirming HTTPS/domain configuration is correct,
-# this can be increased later.
 # =========================================================
 
 if IS_VERCEL:
