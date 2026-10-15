@@ -57,7 +57,6 @@ def report_dashboard(request):
     parsed_from = None
     parsed_to = None
 
-
     if date_from:
 
         try:
@@ -72,7 +71,6 @@ def report_dashboard(request):
             date_from = ""
             parsed_from = None
 
-
     if date_to:
 
         try:
@@ -86,7 +84,6 @@ def report_dashboard(request):
 
             date_to = ""
             parsed_to = None
-
 
     # =====================================================
     # BASE ORDER QUERY
@@ -105,7 +102,6 @@ def report_dashboard(request):
         )
     )
 
-
     # =====================================================
     # APPLY DATE RANGE
     # =====================================================
@@ -118,7 +114,6 @@ def report_dashboard(request):
             )
         )
 
-
     if parsed_to:
 
         orders = orders.filter(
@@ -126,7 +121,6 @@ def report_dashboard(request):
                 parsed_to
             )
         )
-
 
     # =====================================================
     # ORDER COUNTS
@@ -136,7 +130,6 @@ def report_dashboard(request):
         orders.count()
     )
 
-
     delivered_orders = (
         orders.filter(
             status=(
@@ -144,7 +137,6 @@ def report_dashboard(request):
             )
         )
     )
-
 
     returned_orders = (
         orders.filter(
@@ -154,7 +146,6 @@ def report_dashboard(request):
         )
     )
 
-
     cancelled_orders = (
         orders.filter(
             status=(
@@ -163,29 +154,51 @@ def report_dashboard(request):
         )
     )
 
-
     delivered_count = (
         delivered_orders.count()
     )
-
 
     returned_count = (
         returned_orders.count()
     )
 
-
     cancelled_count = (
         cancelled_orders.count()
     )
 
+    # =====================================================
+    # REFUND SUMMARY
+    # =====================================================
+
+    total_refunded = sum(
+        (
+            order.refunded_amount
+            for order
+            in orders
+        ),
+        Decimal(
+            "0.00"
+        ),
+    )
+
+    delivered_refunds = sum(
+        (
+            order.refunded_amount
+            for order
+            in delivered_orders
+        ),
+        Decimal(
+            "0.00"
+        ),
+    )
 
     # =====================================================
     # TOTAL SALES
     #
-    # Only delivered orders count as completed sales.
+    # Delivered order value - delivered refunds
     # =====================================================
 
-    total_sales = (
+    gross_delivered_sales = (
         delivered_orders
         .aggregate(
             total=Sum(
@@ -200,31 +213,41 @@ def report_dashboard(request):
         )
     )
 
+    total_sales = (
+        gross_delivered_sales
+        - delivered_refunds
+    )
+
+    if (
+        total_sales
+        < Decimal("0.00")
+    ):
+        total_sales = Decimal(
+            "0.00"
+        )
 
     # =====================================================
     # TOTAL COLLECTED
+    #
+    # Net cash retained:
+    # Paid - Refunded
     # =====================================================
 
-    total_collected = (
-        orders
-        .aggregate(
-            total=Sum(
-                "paid_amount"
-            )
-        )
-        .get(
-            "total"
-        )
-        or Decimal(
+    total_collected = sum(
+        (
+            order.net_paid_amount
+            for order
+            in orders
+        ),
+        Decimal(
             "0.00"
-        )
+        ),
     )
-
 
     # =====================================================
     # OUTSTANDING DUE
     #
-    # Cancelled and returned orders are excluded.
+    # Cancelled and returned orders excluded
     # =====================================================
 
     active_receivable_orders = (
@@ -235,7 +258,6 @@ def report_dashboard(request):
             ]
         )
     )
-
 
     outstanding_due = sum(
         (
@@ -248,7 +270,6 @@ def report_dashboard(request):
         ),
     )
 
-
     # =====================================================
     # DELIVERED ORDER IDS
     # =====================================================
@@ -260,7 +281,6 @@ def report_dashboard(request):
             flat=True,
         )
     )
-
 
     # =====================================================
     # DELIVERED ITEMS
@@ -279,15 +299,10 @@ def report_dashboard(request):
         )
     )
 
-
     # =====================================================
     # ESTIMATED PROFIT
     #
-    # Revenue:
-    # unit_price * quantity
-    #
-    # Cost:
-    # unit_cost * quantity
+    # Revenue - Cost - Refunds
     # =====================================================
 
     total_product_revenue = sum(
@@ -303,7 +318,6 @@ def report_dashboard(request):
         ),
     )
 
-
     total_product_cost = sum(
         (
             item.unit_cost
@@ -317,21 +331,17 @@ def report_dashboard(request):
         ),
     )
 
-
     estimated_profit = (
         total_product_revenue
         - total_product_cost
+        - delivered_refunds
     )
-
 
     # =====================================================
     # TOP SELLING PRODUCTS
     #
-    # line_total is a Python property,
-    # not a database field.
-    #
-    # Revenue is calculated using:
-    # unit_price * quantity
+    # Product revenue stays gross because refunds are
+    # currently stored at order level, not item level.
     # =====================================================
 
     revenue_expression = (
@@ -344,7 +354,6 @@ def report_dashboard(request):
             ),
         )
     )
-
 
     top_products = (
         delivered_items
@@ -367,7 +376,6 @@ def report_dashboard(request):
         )[:5]
     )
 
-
     # =====================================================
     # LOW STOCK PRODUCTS
     # =====================================================
@@ -384,14 +392,12 @@ def report_dashboard(request):
         )
     )
 
-
     low_stock_products = [
         product
         for product
         in products
         if product.is_low_stock
     ][:5]
-
 
     # =====================================================
     # RECENT DELIVERED ORDERS
@@ -403,7 +409,6 @@ def report_dashboard(request):
             "-created_at"
         )[:5]
     )
-
 
     # =====================================================
     # COURIER + COD RECONCILIATION
@@ -420,11 +425,8 @@ def report_dashboard(request):
         )
     )
 
-
     # =====================================================
-    # APPLY SAME REPORT DATE RANGE TO COURIER DATA
-    #
-    # The date range is based on the related order date.
+    # APPLY REPORT DATE FILTER TO COURIER DATA
     # =====================================================
 
     if parsed_from:
@@ -438,7 +440,6 @@ def report_dashboard(request):
             )
         )
 
-
     if parsed_to:
 
         courier_settlements = (
@@ -450,12 +451,8 @@ def report_dashboard(request):
             )
         )
 
-
     # =====================================================
     # COURIER OUTSTANDING PER ROW
-    #
-    # Outstanding =
-    # COD Expected - COD Received
     # =====================================================
 
     courier_settlements = (
@@ -482,7 +479,6 @@ def report_dashboard(request):
             "-updated_at"
         )
     )
-
 
     # =====================================================
     # COURIER SUMMARY
@@ -570,13 +566,11 @@ def report_dashboard(request):
         )
     )
 
-
     courier_total_expected = (
         courier_summary[
             "total_expected"
         ]
     )
-
 
     courier_total_received = (
         courier_summary[
@@ -584,20 +578,17 @@ def report_dashboard(request):
         ]
     )
 
-
     courier_charges = (
         courier_summary[
             "courier_charges"
         ]
     )
 
-
     courier_return_charges = (
         courier_summary[
             "return_charges"
         ]
     )
-
 
     # =====================================================
     # OUTSTANDING COD
@@ -607,7 +598,6 @@ def report_dashboard(request):
         courier_total_expected
         - courier_total_received
     )
-
 
     if (
         courier_outstanding
@@ -622,15 +612,8 @@ def report_dashboard(request):
             )
         )
 
-
     # =====================================================
     # NET COURIER RECEIVABLE
-    #
-    # Gross COD Expected
-    # - Courier Charge
-    # - Return Charge
-    #
-    # This is informational only.
     # =====================================================
 
     courier_net_expected = (
@@ -638,7 +621,6 @@ def report_dashboard(request):
         - courier_charges
         - courier_return_charges
     )
-
 
     if (
         courier_net_expected
@@ -653,18 +635,14 @@ def report_dashboard(request):
             )
         )
 
-
     # =====================================================
     # NET COURIER OUTSTANDING
-    #
-    # Net Expected - Received
     # =====================================================
 
     courier_net_outstanding = (
         courier_net_expected
         - courier_total_received
     )
-
 
     if (
         courier_net_outstanding
@@ -678,7 +656,6 @@ def report_dashboard(request):
                 "0.00"
             )
         )
-
 
     # =====================================================
     # COURIER STATUS COUNTS
@@ -695,7 +672,6 @@ def report_dashboard(request):
         .count()
     )
 
-
     courier_partial_count = (
         courier_settlements
         .filter(
@@ -706,7 +682,6 @@ def report_dashboard(request):
         )
         .count()
     )
-
 
     courier_settled_count = (
         courier_settlements
@@ -719,12 +694,10 @@ def report_dashboard(request):
         .count()
     )
 
-
     courier_total_count = (
         courier_settlements
         .count()
     )
-
 
     # =====================================================
     # CONTEXT
@@ -732,28 +705,14 @@ def report_dashboard(request):
 
     context = {
 
-        # -------------------------------------------------
-        # BUSINESS
-        # -------------------------------------------------
-
         "business":
             business,
-
-
-        # -------------------------------------------------
-        # FILTERS
-        # -------------------------------------------------
 
         "date_from":
             date_from,
 
         "date_to":
             date_to,
-
-
-        # -------------------------------------------------
-        # ORDER COUNTS
-        # -------------------------------------------------
 
         "total_orders":
             total_orders,
@@ -767,10 +726,8 @@ def report_dashboard(request):
         "cancelled_count":
             cancelled_count,
 
-
-        # -------------------------------------------------
-        # FINANCIAL SUMMARY
-        # -------------------------------------------------
+        "gross_delivered_sales":
+            gross_delivered_sales,
 
         "total_sales":
             total_sales,
@@ -778,16 +735,14 @@ def report_dashboard(request):
         "total_collected":
             total_collected,
 
+        "total_refunded":
+            total_refunded,
+
         "outstanding_due":
             outstanding_due,
 
         "estimated_profit":
             estimated_profit,
-
-
-        # -------------------------------------------------
-        # PRODUCT REPORTS
-        # -------------------------------------------------
 
         "top_products":
             top_products,
@@ -795,18 +750,8 @@ def report_dashboard(request):
         "low_stock_products":
             low_stock_products,
 
-
-        # -------------------------------------------------
-        # ORDER REPORTS
-        # -------------------------------------------------
-
         "recent_delivered_orders":
             recent_delivered_orders,
-
-
-        # -------------------------------------------------
-        # COURIER + COD
-        # -------------------------------------------------
 
         "courier_settlements":
             courier_settlements,
@@ -844,7 +789,6 @@ def report_dashboard(request):
         "courier_total_count":
             courier_total_count,
     }
-
 
     return render(
         request,

@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import sys
 
 import dj_database_url
 from dotenv import load_dotenv
@@ -40,6 +41,8 @@ IS_VERCEL = (
     )
     == "1"
 )
+
+IS_TESTING = "test" in sys.argv
 
 
 # =========================================================
@@ -309,6 +312,29 @@ CLOUDINARY_URL = os.getenv(
 )
 
 
+# ---------------------------------------------------------
+# Static files storage
+# ---------------------------------------------------------
+# Development and tests should not depend on a collectstatic
+# manifest. Production uses WhiteNoise's compressed manifest
+# storage for cache-busted static assets.
+
+if DEBUG or IS_TESTING:
+    STATICFILES_BACKEND = (
+        "django.contrib.staticfiles.storage."
+        "StaticFilesStorage"
+    )
+else:
+    STATICFILES_BACKEND = (
+        "whitenoise.storage."
+        "CompressedManifestStaticFilesStorage"
+    )
+
+
+# ---------------------------------------------------------
+# Media storage
+# ---------------------------------------------------------
+
 if CLOUDINARY_URL:
 
     STORAGES = {
@@ -321,8 +347,7 @@ if CLOUDINARY_URL:
 
         "staticfiles": {
             "BACKEND":
-                "whitenoise.storage."
-                "CompressedManifestStaticFilesStorage",
+                STATICFILES_BACKEND,
         },
     }
 
@@ -343,11 +368,9 @@ else:
 
         "staticfiles": {
             "BACKEND":
-                "whitenoise.storage."
-                "CompressedManifestStaticFilesStorage",
+                STATICFILES_BACKEND,
         },
     }
-
 
 # =========================================================
 # AUTH

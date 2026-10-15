@@ -38,6 +38,8 @@ from .forms import (
 
     OrderPaymentForm,
 
+    OrderRefundForm,
+
 )
 
 from .models import (
@@ -47,6 +49,8 @@ from .models import (
     Order,
 
     OrderPayment,
+
+    OrderRefund,
 
     OrderStatusHistory,
 
@@ -130,7 +134,11 @@ ALLOWED_STATUS_TRANSITIONS = {
 
     Order.STATUS_RETURNED: set(),
 
-    Order.STATUS_CANCELLED: set(),
+    Order.STATUS_CANCELLED: {
+
+        Order.STATUS_CONFIRMED,
+
+    },
 
 }
 
@@ -172,6 +180,14 @@ def calculate_payment_status(order):
 
     )
 
+    refunded_amount = (
+
+        order.refunded_amount
+
+        or Decimal("0.00")
+
+    )
+
     total_amount = (
 
         order.total_amount
@@ -180,9 +196,49 @@ def calculate_payment_status(order):
 
     )
 
-    if (
+    net_paid_amount = (
 
         paid_amount
+
+        - refunded_amount
+
+    )
+
+    if (
+
+        net_paid_amount
+
+        < Decimal("0.00")
+
+    ):
+
+        net_paid_amount = Decimal(
+
+            "0.00"
+
+        )
+
+    if (
+
+        refunded_amount
+
+        > Decimal("0.00")
+
+        and paid_amount
+
+        > Decimal("0.00")
+
+        and net_paid_amount
+
+        <= Decimal("0.00")
+
+    ):
+
+        return Order.PAYMENT_REFUNDED
+
+    if (
+
+        net_paid_amount
 
         <= Decimal("0.00")
 
@@ -192,7 +248,7 @@ def calculate_payment_status(order):
 
     if (
 
-        paid_amount
+        net_paid_amount
 
         < total_amount
 
@@ -618,6 +674,8 @@ def order_detail(request, pk):
 
             "payments",
 
+            "refunds",
+
         ),
 
         pk=pk,
@@ -657,6 +715,21 @@ def order_detail(request, pk):
         initial={
 
             "payment_method":
+
+            order.payment_method,
+
+        },
+
+    )
+
+
+    refund_form = OrderRefundForm(
+
+        order=order,
+
+        initial={
+
+            "refund_method":
 
             order.payment_method,
 
@@ -709,6 +782,10 @@ def order_detail(request, pk):
             "payment_form":
 
             payment_form,
+
+            "refund_form":
+
+            refund_form,
 
             "courier_settlement":
 
@@ -3448,6 +3525,154 @@ def order_payment_create(
         pk=order.pk,
 
     )
+
+
+# =========================================================
+
+# RECORD REFUND
+
+# =========================================================
+
+@login_required
+
+@require_POST
+
+def order_refund_create(
+
+    request,
+
+    pk,
+
+):
+
+    business = get_current_business(
+
+        request.user
+
+    )
+
+    with transaction.atomic():
+
+        order = get_object_or_404(
+
+            Order.objects
+
+            .select_for_update(),
+
+            pk=pk,
+
+            business=business,
+
+        )
+
+        refund_form = OrderRefundForm(
+
+            request.POST,
+
+            order=order,
+
+        )
+
+        if not refund_form.is_valid():
+
+            for field_errors in (
+
+                refund_form.errors.values()
+
+            ):
+
+                for error in field_errors:
+
+                    messages.error(
+
+                        request,
+
+                        error,
+
+                    )
+
+            return redirect(
+
+                "orders:detail",
+
+                pk=order.pk,
+
+            )
+
+        refund = (
+
+            refund_form.save(
+
+                commit=False
+
+            )
+
+        )
+
+        refund.order = order
+
+        refund.business = business
+
+        refund.refunded_by = (
+
+            request.user
+
+        )
+
+        refund.save()
+
+        order.refunded_amount += (
+
+            refund.amount
+
+        )
+
+        order.payment_status = (
+
+            calculate_payment_status(
+
+                order
+
+            )
+
+        )
+
+        order.save(
+
+            update_fields=[
+
+                "refunded_amount",
+
+                "payment_status",
+
+                "updated_at",
+
+            ]
+
+        )
+
+    messages.success(
+
+        request,
+
+        (
+
+            f"Refund of ৳{refund.amount} "
+
+            f"recorded successfully."
+
+        ),
+
+    )
+
+    return redirect(
+
+        "orders:detail",
+
+        pk=order.pk,
+
+    )
+
 
 # =========================================================
 

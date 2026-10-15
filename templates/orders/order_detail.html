@@ -138,6 +138,106 @@ Order details and payment summary.
     }
 
 
+
+    /* =====================================================
+       REFUND FORM
+    ===================================================== */
+
+    .op-refund-form {
+        display: grid;
+
+        grid-template-columns:
+            minmax(150px, 0.8fr)
+            minmax(170px, 0.9fr)
+            minmax(190px, 1.05fr)
+            minmax(220px, 1.25fr)
+            auto;
+
+        gap: 14px;
+
+        align-items: start;
+    }
+
+
+    .op-refund-field {
+        min-width: 0;
+    }
+
+
+    .op-refund-field .form-control {
+        width: 100%;
+        max-width: 100%;
+    }
+
+
+    .op-refund-help {
+        min-height: 17px;
+
+        margin-top: 6px;
+
+        color: var(--text-secondary);
+
+        font-size: 11px;
+    }
+
+
+    .op-refund-action {
+        display: flex;
+        align-items: flex-start;
+
+        padding-top: 26px;
+    }
+
+
+    .op-refund-action .btn {
+        min-height: 42px;
+
+        padding-left: 17px;
+        padding-right: 17px;
+
+        white-space: nowrap;
+    }
+
+
+    /* =====================================================
+       REFUND HISTORY WIDTHS
+    ===================================================== */
+
+    .op-refund-history th:nth-child(1),
+    .op-refund-history td:nth-child(1) {
+        width: 14%;
+    }
+
+
+    .op-refund-history th:nth-child(2),
+    .op-refund-history td:nth-child(2) {
+        width: 17%;
+    }
+
+
+    .op-refund-history th:nth-child(3),
+    .op-refund-history td:nth-child(3) {
+        width: 19%;
+    }
+
+
+    .op-refund-history th:nth-child(4),
+    .op-refund-history td:nth-child(4) {
+        width: 17%;
+    }
+
+
+    .op-refund-history th:nth-child(5),
+    .op-refund-history td:nth-child(5) {
+        width: 18%;
+    }
+
+
+    .op-refund-history th:nth-child(6),
+    .op-refund-history td:nth-child(6) {
+        width: 15%;
+    }
+
     /* =====================================================
        COMPLETE / FINAL STATE
     ===================================================== */
@@ -378,13 +478,15 @@ Order details and payment summary.
 
     @media (max-width: 1250px) {
 
-        .op-payment-form {
+        .op-payment-form,
+        .op-refund-form {
             grid-template-columns:
                 repeat(2, minmax(0, 1fr));
         }
 
 
-        .op-payment-action {
+        .op-payment-action,
+        .op-refund-action {
             grid-column: 1 / -1;
 
             justify-content: flex-end;
@@ -427,13 +529,15 @@ Order details and payment summary.
 
 
         .op-status-form,
-        .op-payment-form {
+        .op-payment-form,
+        .op-refund-form {
             grid-template-columns: 1fr;
         }
 
 
         .op-status-action,
-        .op-payment-action {
+        .op-payment-action,
+        .op-refund-action {
             grid-column: auto;
 
             padding-top: 0;
@@ -441,7 +545,8 @@ Order details and payment summary.
 
 
         .op-status-action .btn,
-        .op-payment-action .btn {
+        .op-payment-action .btn,
+        .op-refund-action .btn {
             width: 100%;
         }
 
@@ -847,11 +952,50 @@ Order details and payment summary.
             <div class="detail-row">
 
                 <span>
-                    Paid
+                    Gross Paid
                 </span>
 
                 <strong>
                     ৳{{ order.paid_amount }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Refunded
+                </span>
+
+                <strong>
+                    ৳{{ order.refunded_amount }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Net Paid
+                </span>
+
+                <strong>
+                    ৳{{ order.net_paid_amount }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Refundable
+                </span>
+
+                <strong>
+                    ৳{{ order.refundable_amount }}
                 </strong>
 
             </div>
@@ -1264,7 +1408,273 @@ Order details and payment summary.
 
 
 
+
+
 <div class="op-section-gap"></div>
+
+
+{# ===================================================== #}
+{# RECORD REFUND                                         #}
+{# ===================================================== #}
+
+<section class="panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                Record Refund
+            </h2>
+
+            <p>
+                Record a partial or full refund against payments received.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="op-action-body">
+
+        {% if order.refundable_amount > 0 %}
+
+            <form
+                method="post"
+                action="{% url 'orders:refund_create' order.pk %}"
+                class="op-refund-form"
+            >
+
+                {% csrf_token %}
+
+
+                <div class="op-refund-field">
+
+                    <label
+                        for="{{ refund_form.amount.id_for_label }}"
+                        class="form-label"
+                    >
+                        Amount
+                    </label>
+
+                    {{ refund_form.amount }}
+
+                    <div class="op-refund-help">
+                        Refundable: ৳{{ order.refundable_amount }}
+                    </div>
+
+                </div>
+
+
+                <div class="op-refund-field">
+
+                    <label
+                        for="{{ refund_form.refund_method.id_for_label }}"
+                        class="form-label"
+                    >
+                        Method
+                    </label>
+
+                    {{ refund_form.refund_method }}
+
+                    <div class="op-refund-help">
+                        &nbsp;
+                    </div>
+
+                </div>
+
+
+                <div class="op-refund-field">
+
+                    <label
+                        for="{{ refund_form.reference.id_for_label }}"
+                        class="form-label"
+                    >
+                        Reference
+                    </label>
+
+                    {{ refund_form.reference }}
+
+                    <div class="op-refund-help">
+                        &nbsp;
+                    </div>
+
+                </div>
+
+
+                <div class="op-refund-field">
+
+                    <label
+                        for="{{ refund_form.note.id_for_label }}"
+                        class="form-label"
+                    >
+                        Note
+                    </label>
+
+                    {{ refund_form.note }}
+
+                    <div class="op-refund-help">
+                        &nbsp;
+                    </div>
+
+                </div>
+
+
+                <div class="op-refund-action">
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        Record Refund
+                    </button>
+
+                </div>
+
+            </form>
+
+        {% else %}
+
+            <div class="op-complete-state">
+
+                {% if order.refunded_amount > 0 %}
+
+                    <span class="badge badge-neutral">
+                        No Refundable Balance
+                    </span>
+
+                    <p>
+                        No remaining paid amount is available to refund.
+                    </p>
+
+                {% else %}
+
+                    <span class="badge badge-neutral">
+                        No Payment to Refund
+                    </span>
+
+                    <p>
+                        A refund can be recorded after a payment has been received.
+                    </p>
+
+                {% endif %}
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</section>
+
+
+<div class="op-section-gap"></div>
+
+
+{# ===================================================== #}
+{# REFUND HISTORY                                        #}
+{# ===================================================== #}
+
+<section class="panel op-table-panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                Refund History
+            </h2>
+
+            <p>
+                Refunds recorded for this order.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="op-table-wrapper">
+
+        <table class="data-table op-refund-history">
+
+            <thead>
+
+                <tr>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th>Reference</th>
+                    <th>Refunded By</th>
+                    <th>Note</th>
+                    <th>Date</th>
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+                {% for refund in order.refunds.all %}
+
+                    <tr>
+
+                        <td>
+                            <strong>
+                                ৳{{ refund.amount }}
+                            </strong>
+                        </td>
+
+                        <td>
+                            {{ refund.get_refund_method_display }}
+                        </td>
+
+                        <td>
+                            {{ refund.reference|default:"—" }}
+                        </td>
+
+                        <td>
+
+                            {% if refund.refunded_by %}
+                                {{ refund.refunded_by }}
+                            {% else %}
+                                —
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+                            {{ refund.note|default:"—" }}
+                        </td>
+
+                        <td>
+                            {{ refund.created_at|date:"d M Y, h:i A" }}
+                        </td>
+
+                    </tr>
+
+                {% empty %}
+
+                    <tr>
+
+                        <td
+                            colspan="6"
+                            class="op-table-empty"
+                        >
+                            No refund history available.
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
 
 
 <div class="op-section-gap"></div>

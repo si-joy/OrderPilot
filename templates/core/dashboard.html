@@ -107,7 +107,10 @@ Overview of your store performance.
     {# RECENT ORDERS                                     #}
     {# ================================================= #}
 
-    <div class="panel" style="overflow:hidden;">
+    <div
+        class="panel"
+        style="overflow:hidden;"
+    >
 
         <div class="panel-header">
 
@@ -149,7 +152,7 @@ Overview of your store performance.
                     class="data-table"
                     style="
                         width:100%;
-                        min-width:680px;
+                        min-width:760px;
                     "
                 >
 
@@ -171,6 +174,10 @@ Overview of your store performance.
 
                             <th>
                                 Total
+                            </th>
+
+                            <th>
+                                Net Paid
                             </th>
 
                             <th>
@@ -215,12 +222,17 @@ Overview of your store performance.
 
 
                                 <td>
-                                    ৳{{ order.total_amount }}
+                                    ৳{{ order.total_amount|floatformat:2 }}
                                 </td>
 
 
                                 <td>
-                                    ৳{{ order.due_amount }}
+                                    ৳{{ order.net_paid_amount|floatformat:2 }}
+                                </td>
+
+
+                                <td>
+                                    ৳{{ order.due_amount|floatformat:2 }}
                                 </td>
 
 
@@ -337,6 +349,19 @@ Overview of your store performance.
             <div class="summary-row">
 
                 <span>
+                    Total Refunded
+                </span>
+
+                <strong>
+                    ৳{{ total_refunded|floatformat:2 }}
+                </strong>
+
+            </div>
+
+
+            <div class="summary-row">
+
+                <span>
                     Low Stock Products
                 </span>
 
@@ -367,7 +392,7 @@ Overview of your store performance.
     <div class="stat-card">
 
         <div class="stat-label">
-            Completed Sales
+            Net Sales
         </div>
 
         <div class="stat-value">
@@ -375,7 +400,7 @@ Overview of your store performance.
         </div>
 
         <div class="stat-note">
-            Delivered order value
+            Delivered sales after refunds
         </div>
 
     </div>
@@ -384,7 +409,7 @@ Overview of your store performance.
     <div class="stat-card">
 
         <div class="stat-label">
-            Total Collected
+            Net Collected
         </div>
 
         <div class="stat-value">
@@ -392,7 +417,24 @@ Overview of your store performance.
         </div>
 
         <div class="stat-note">
-            Payments recorded
+            Payments retained after refunds
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Total Refunded
+        </div>
+
+        <div class="stat-value">
+            ৳{{ total_refunded|floatformat:2 }}
+        </div>
+
+        <div class="stat-note">
+            Refunds issued across orders
         </div>
 
     </div>
@@ -410,23 +452,6 @@ Overview of your store performance.
 
         <div class="stat-note">
             Outstanding COD balance
-        </div>
-
-    </div>
-
-
-    <div class="stat-card">
-
-        <div class="stat-label">
-            Low Stock
-        </div>
-
-        <div class="stat-value">
-            {{ low_stock_count }}
-        </div>
-
-        <div class="stat-note">
-            Products needing attention
         </div>
 
     </div>

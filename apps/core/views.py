@@ -322,18 +322,49 @@ def dashboard(request):
         )
     )
 
+    # =====================================================
+    # REFUND-AWARE COMPLETED SALES
+    # =====================================================
+
     total_sales = sum(
         (
-            order.total_amount
-            for order in delivered_queryset
+            max(
+                (
+                    order.total_amount
+                    - order.refunded_amount
+                ),
+                Decimal("0.00"),
+            )
+            for order
+            in delivered_queryset
         ),
         Decimal("0.00"),
     )
 
+    # =====================================================
+    # TOTAL REFUNDED
+    # =====================================================
+
+    total_refunded = sum(
+        (
+            order.refunded_amount
+            for order
+            in orders
+        ),
+        Decimal("0.00"),
+    )
+
+    # =====================================================
+    # NET COLLECTED
+    #
+    # Paid - Refunded
+    # =====================================================
+
     total_collected = sum(
         (
-            order.paid_amount
-            for order in orders
+            order.net_paid_amount
+            for order
+            in orders
         ),
         Decimal("0.00"),
     )
@@ -353,8 +384,10 @@ def dashboard(request):
         "low_stock_count": low_stock_count,
 
         "cod_pending": cod_pending,
+
         "total_sales": total_sales,
         "total_collected": total_collected,
+        "total_refunded": total_refunded,
 
         "recent_orders": recent_orders,
     }

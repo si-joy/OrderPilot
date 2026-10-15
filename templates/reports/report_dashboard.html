@@ -583,7 +583,7 @@ Sales, payments, courier settlements and business performance overview.
     <div class="stat-card">
 
         <div class="stat-label">
-            Total Sales
+            Net Sales
         </div>
 
         <div class="stat-value">
@@ -591,7 +591,7 @@ Sales, payments, courier settlements and business performance overview.
         </div>
 
         <div class="stat-note">
-            Delivered order revenue
+            Delivered sales after refunds
         </div>
 
     </div>
@@ -601,7 +601,7 @@ Sales, payments, courier settlements and business performance overview.
     <div class="stat-card">
 
         <div class="stat-label">
-            Total Collected
+            Net Collected
         </div>
 
         <div class="stat-value">
@@ -609,7 +609,25 @@ Sales, payments, courier settlements and business performance overview.
         </div>
 
         <div class="stat-note">
-            Payments received
+            Payments retained after refunds
+        </div>
+
+    </div>
+
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Total Refunded
+        </div>
+
+        <div class="stat-value">
+            ৳{{ total_refunded|floatformat:2 }}
+        </div>
+
+        <div class="stat-note">
+            Refunds issued in selected period
         </div>
 
     </div>
@@ -627,11 +645,37 @@ Sales, payments, courier settlements and business performance overview.
         </div>
 
         <div class="stat-note">
-            Current receivable
+            Current active receivable
         </div>
 
     </div>
 
+</section>
+
+
+
+<div class="report-section-gap"></div>
+
+
+
+<section class="stats-grid">
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Gross Delivered Sales
+        </div>
+
+        <div class="stat-value">
+            ৳{{ gross_delivered_sales|floatformat:2 }}
+        </div>
+
+        <div class="stat-note">
+            Delivered value before refunds
+        </div>
+
+    </div>
 
 
     <div class="stat-card">
@@ -645,7 +689,41 @@ Sales, payments, courier settlements and business performance overview.
         </div>
 
         <div class="stat-note">
-            Delivered product margin
+            Delivered margin after refunds
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Refund Impact
+        </div>
+
+        <div class="stat-value">
+            ৳{{ total_refunded|floatformat:2 }}
+        </div>
+
+        <div class="stat-note">
+            Total cash returned to customers
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            Current Receivable
+        </div>
+
+        <div class="stat-value">
+            ৳{{ outstanding_due|floatformat:2 }}
+        </div>
+
+        <div class="stat-note">
+            Remaining active-order balance
         </div>
 
     </div>
@@ -655,8 +733,6 @@ Sales, payments, courier settlements and business performance overview.
 
 
 <div class="report-section-gap"></div>
-
-
 
 {# ===================================================== #}
 {# ORDER PERFORMANCE                                    #}
@@ -1399,7 +1475,11 @@ Sales, payments, courier settlements and business performance overview.
                         </th>
 
                         <th>
-                            Paid
+                            Net Paid
+                        </th>
+
+                        <th>
+                            Refunded
                         </th>
 
                         <th>
@@ -1447,7 +1527,12 @@ Sales, payments, courier settlements and business performance overview.
 
 
                             <td>
-                                ৳{{ order.paid_amount|floatformat:2 }}
+                                ৳{{ order.net_paid_amount|floatformat:2 }}
+                            </td>
+                            
+                            
+                            <td>
+                                ৳{{ order.refunded_amount|floatformat:2 }}
                             </td>
 
 

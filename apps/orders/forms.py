@@ -11,6 +11,7 @@ from .models import (
     Order,
     OrderItem,
     OrderPayment,
+    OrderRefund,
 )
 
 
@@ -321,17 +322,144 @@ class OrderPaymentForm(forms.ModelForm):
                 "Payment amount must be greater than zero."
             )
 
-        if (
-            self.order
-            and amount > self.order.due_amount
-        ):
-            raise forms.ValidationError(
-                (
-                    "Payment cannot exceed "
-                    f"the due amount of "
-                    f"৳{self.order.due_amount}."
+        if self.order:
+
+            if self.order.status in {
+                Order.STATUS_CANCELLED,
+                Order.STATUS_RETURNED,
+            }:
+                raise forms.ValidationError(
+                    (
+                        "Payments cannot be recorded for "
+                        f"{self.order.get_status_display().lower()} orders."
+                    )
                 )
+
+            if (
+                self.order.due_amount
+                <= Decimal("0.00")
+            ):
+                raise forms.ValidationError(
+                    "This order has already been fully paid."
+                )
+
+            if (
+                amount
+                > self.order.due_amount
+            ):
+                raise forms.ValidationError(
+                    (
+                        "Payment cannot exceed "
+                        f"the due amount of "
+                        f"৳{self.order.due_amount}."
+                    )
+                )
+
+        return amount
+
+
+# =========================================================
+# ORDER REFUND FORM
+# =========================================================
+
+class OrderRefundForm(forms.ModelForm):
+
+    class Meta:
+        model = OrderRefund
+
+        fields = [
+            "amount",
+            "refund_method",
+            "reference",
+            "note",
+        ]
+
+        widgets = {
+            "amount": forms.NumberInput(
+                attrs={
+                    "class": "form-control",
+                    "step": "0.01",
+                    "min": "0.01",
+                    "placeholder": "Refund amount",
+                }
+            ),
+
+            "refund_method": forms.Select(
+                attrs={
+                    "class": "form-control",
+                }
+            ),
+
+            "reference": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder":
+                    "Refund transaction / reference ID",
+                }
+            ),
+
+            "note": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder":
+                    "Optional refund note",
+                }
+            ),
+        }
+
+    def __init__(
+        self,
+        *args,
+        order=None,
+        **kwargs,
+    ):
+        super().__init__(
+            *args,
+            **kwargs,
+        )
+
+        self.order = order
+
+    def clean_amount(self):
+
+        amount = (
+            self.cleaned_data
+            .get("amount")
+        )
+
+        if amount is None:
+            return amount
+
+        if amount <= Decimal("0.00"):
+            raise forms.ValidationError(
+                "Refund amount must be greater than zero."
             )
+
+        if self.order:
+
+            refundable_amount = (
+                self.order.refundable_amount
+            )
+
+            if (
+                refundable_amount
+                <= Decimal("0.00")
+            ):
+                raise forms.ValidationError(
+                    "This order has no refundable payment."
+                )
+
+            if (
+                amount
+                > refundable_amount
+            ):
+                raise forms.ValidationError(
+                    (
+                        "Refund cannot exceed "
+                        f"the refundable amount of "
+                        f"৳{refundable_amount}."
+                    )
+                )
 
         return amount
 

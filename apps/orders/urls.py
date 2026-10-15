@@ -39,6 +39,12 @@ urlpatterns = [
     ),
 
     path(
+        "<int:pk>/refunds/new/",
+        views.order_refund_create,
+        name="refund_create",
+    ),
+
+    path(
         "<int:pk>/courier-settlement/",
         views.order_courier_settlement,
         name="courier_settlement",

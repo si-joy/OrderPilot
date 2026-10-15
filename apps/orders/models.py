@@ -3,8 +3,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
-from django.db.models import Q
-
+from django.db.models import F, Q
 
 def generate_order_number():
     return f"OP-{uuid.uuid4().hex[:8].upper()}"
@@ -147,6 +146,15 @@ class Order(models.Model):
         default=Decimal("0.00"),
     )
 
+    refunded_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text=(
+            "Total amount refunded against this order."
+        ),
+    )
+
     # =====================================================
     # INVENTORY STATE
     # =====================================================
@@ -244,6 +252,12 @@ class Order(models.Model):
                 condition=Q(paid_amount__gte=0),
                 name="order_paid_amount_non_negative",
             ),
+            models.CheckConstraint(
+                condition=Q(
+                    refunded_amount__lte=F("paid_amount")
+                ),
+                name="order_refund_not_above_paid",
+            ),
         ]
 
     # =====================================================
@@ -254,11 +268,37 @@ class Order(models.Model):
         return self.order_number
 
     @property
+    def net_paid_amount(self):
+
+        net_paid = (
+            (self.paid_amount or Decimal("0.00"))
+            - (self.refunded_amount or Decimal("0.00"))
+        )
+
+        if net_paid < Decimal("0.00"):
+            return Decimal("0.00")
+
+        return net_paid
+
+    @property
+    def refundable_amount(self):
+
+        refundable = (
+            (self.paid_amount or Decimal("0.00"))
+            - (self.refunded_amount or Decimal("0.00"))
+        )
+
+        if refundable < Decimal("0.00"):
+            return Decimal("0.00")
+
+        return refundable
+
+    @property
     def due_amount(self):
 
         due = (
-            self.total_amount
-            - self.paid_amount
+            (self.total_amount or Decimal("0.00"))
+            - self.net_paid_amount
         )
 
         if due < Decimal("0.00"):
@@ -474,6 +514,88 @@ class OrderPayment(models.Model):
         return (
             f"{self.order.order_number} "
             f"- {self.amount}"
+        )
+
+
+# =========================================================
+# ORDER REFUND
+# =========================================================
+
+class OrderRefund(models.Model):
+
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name="refunds",
+    )
+
+    business = models.ForeignKey(
+        "businesses.Business",
+        on_delete=models.CASCADE,
+        related_name="order_refunds",
+    )
+
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+
+    refund_method = models.CharField(
+        max_length=20,
+        choices=Order.PAYMENT_METHOD_CHOICES,
+    )
+
+    reference = models.CharField(
+        max_length=120,
+        blank=True,
+    )
+
+    note = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+
+    refunded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="processed_order_refunds",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+
+        indexes = [
+            models.Index(
+                fields=[
+                    "business",
+                    "created_at",
+                ],
+            ),
+            models.Index(
+                fields=[
+                    "order",
+                    "created_at",
+                ],
+            ),
+        ]
+
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(amount__gt=0),
+                name="order_refund_amount_positive",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.order.order_number} "
+            f"- Refund {self.amount}"
         )
 
 
