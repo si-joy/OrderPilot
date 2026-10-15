@@ -126,9 +126,44 @@ Add or update product information.
                         <label class="form-label">
                             Current Stock
                         </label>
-
+                    
                         {{ form.stock_quantity }}
-
+                    
+                        {% if form.stock_quantity.errors %}
+                    
+                            <div class="form-error">
+                                {{ form.stock_quantity.errors|striptags }}
+                            </div>
+                        
+                        {% endif %}
+                        
+                        
+                        {% if product %}
+                        
+                            <div class="form-help">
+                            
+                                Stock cannot be edited directly here.
+                            
+                                Use
+                                <strong>
+                                    Adjust Stock
+                                </strong>
+                                from the product details page.
+                            
+                            </div>
+                        
+                        {% else %}
+                        
+                            <div class="form-help">
+                            
+                                Enter the initial opening stock.
+                                Future changes will be recorded through
+                                stock adjustments.
+                            
+                            </div>
+                        
+                        {% endif %}
+                        
                     </div>
 
 

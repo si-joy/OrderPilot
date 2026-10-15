@@ -2,9 +2,15 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
-from apps.businesses.models import Business, BusinessMember
+from apps.businesses.models import (
+    Business,
+    BusinessMember,
+)
 
-from .models import Product
+from .models import (
+    Product,
+    StockAdjustment,
+)
 
 
 User = get_user_model()
@@ -301,4 +307,689 @@ class ProductModuleTests(TestCase):
         self.assertEqual(
             response.status_code,
             302,
+        )
+
+        # =========================================================
+    # STOCK ADJUSTMENT TESTS
+    # =========================================================
+
+    def test_product_creation_records_opening_stock(
+        self,
+    ):
+
+        response = self.client.post(
+            reverse(
+                "products:create"
+            ),
+            {
+                "name":
+                    "Opening Stock Product",
+
+                "sku":
+                    "OPEN-001",
+
+                "selling_price":
+                    "500.00",
+
+                "cost_price":
+                    "300.00",
+
+                "stock_quantity":
+                    12,
+
+                "low_stock_threshold":
+                    3,
+
+                "description":
+                    "",
+
+                "is_active":
+                    "on",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        product = (
+            Product.objects.get(
+                business=self.business,
+                sku="OPEN-001",
+            )
+        )
+
+        adjustment = (
+            StockAdjustment.objects.get(
+                product=product
+            )
+        )
+
+        self.assertEqual(
+            adjustment.adjustment_type,
+            StockAdjustment.TYPE_OPENING,
+        )
+
+        self.assertEqual(
+            adjustment.quantity,
+            12,
+        )
+
+        self.assertEqual(
+            adjustment.before_quantity,
+            0,
+        )
+
+        self.assertEqual(
+            adjustment.after_quantity,
+            12,
+        )
+
+        self.assertEqual(
+            adjustment.adjusted_by,
+            self.user,
+        )
+
+    def test_restock_increases_stock_and_creates_history(
+        self,
+    ):
+
+        response = self.client.post(
+            reverse(
+                "products:stock_adjust",
+                args=[
+                    self.product.pk
+                ],
+            ),
+            {
+                "adjustment_type":
+                    StockAdjustment.TYPE_RESTOCK,
+
+                "quantity":
+                    10,
+
+                "note":
+                    "Supplier restock",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        self.product.refresh_from_db()
+
+        self.assertEqual(
+            self.product.stock_quantity,
+            35,
+        )
+
+        adjustment = (
+            StockAdjustment.objects
+            .filter(
+                product=self.product
+            )
+            .latest("id")
+        )
+
+        self.assertEqual(
+            adjustment.before_quantity,
+            25,
+        )
+
+        self.assertEqual(
+            adjustment.after_quantity,
+            35,
+        )
+
+        self.assertEqual(
+            adjustment.quantity,
+            10,
+        )
+
+        self.assertEqual(
+            adjustment.note,
+            "Supplier restock",
+        )
+
+        self.assertEqual(
+            adjustment.adjusted_by,
+            self.user,
+        )
+
+    def test_damaged_stock_decreases_inventory(
+        self,
+    ):
+
+        response = self.client.post(
+            reverse(
+                "products:stock_adjust",
+                args=[
+                    self.product.pk
+                ],
+            ),
+            {
+                "adjustment_type":
+                    StockAdjustment.TYPE_DAMAGED,
+
+                "quantity":
+                    5,
+
+                "note":
+                    "Damaged items",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        self.product.refresh_from_db()
+
+        self.assertEqual(
+            self.product.stock_quantity,
+            20,
+        )
+
+        adjustment = (
+            StockAdjustment.objects
+            .filter(
+                product=self.product
+            )
+            .latest("id")
+        )
+
+        self.assertEqual(
+            adjustment.before_quantity,
+            25,
+        )
+
+        self.assertEqual(
+            adjustment.after_quantity,
+            20,
+        )
+
+    def test_stock_cannot_be_reduced_below_zero(
+        self,
+    ):
+
+        response = self.client.post(
+            reverse(
+                "products:stock_adjust",
+                args=[
+                    self.product.pk
+                ],
+            ),
+            {
+                "adjustment_type":
+                    StockAdjustment.TYPE_LOST,
+
+                "quantity":
+                    100,
+
+                "note":
+                    "Invalid adjustment",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        self.product.refresh_from_db()
+
+        self.assertEqual(
+            self.product.stock_quantity,
+            25,
+        )
+
+        self.assertFalse(
+            StockAdjustment.objects.filter(
+                product=self.product,
+                adjustment_type=(
+                    StockAdjustment.TYPE_LOST
+                ),
+            ).exists()
+        )
+
+    def test_stock_adjustment_requires_positive_quantity(
+        self,
+    ):
+
+        response = self.client.post(
+            reverse(
+                "products:stock_adjust",
+                args=[
+                    self.product.pk
+                ],
+            ),
+            {
+                "adjustment_type":
+                    StockAdjustment.TYPE_RESTOCK,
+
+                "quantity":
+                    0,
+
+                "note":
+                    "",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        self.product.refresh_from_db()
+
+        self.assertEqual(
+            self.product.stock_quantity,
+            25,
+        )
+
+        self.assertFalse(
+            StockAdjustment.objects.filter(
+                product=self.product
+            ).exists()
+        )
+
+    def test_user_cannot_adjust_other_business_stock(
+        self,
+    ):
+
+        response = self.client.post(
+            reverse(
+                "products:stock_adjust",
+                args=[
+                    self.other_product.pk
+                ],
+            ),
+            {
+                "adjustment_type":
+                    StockAdjustment.TYPE_RESTOCK,
+
+                "quantity":
+                    10,
+
+                "note":
+                    "Should fail",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            404,
+        )
+
+        self.other_product.refresh_from_db()
+
+        self.assertEqual(
+            self.other_product.stock_quantity,
+            10,
+        )
+
+    def test_product_update_cannot_directly_change_stock(
+        self,
+    ):
+
+        response = self.client.post(
+            reverse(
+                "products:update",
+                args=[
+                    self.product.pk
+                ],
+            ),
+            {
+                "name":
+                    self.product.name,
+
+                "sku":
+                    self.product.sku,
+
+                "selling_price":
+                    str(
+                        self.product.selling_price
+                    ),
+
+                "cost_price":
+                    str(
+                        self.product.cost_price
+                    ),
+
+                # Malicious direct stock change.
+                "stock_quantity":
+                    999,
+
+                "low_stock_threshold":
+                    self.product.low_stock_threshold,
+
+                "description":
+                    self.product.description,
+
+                "is_active":
+                    "on",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        self.product.refresh_from_db()
+
+        self.assertEqual(
+            self.product.stock_quantity,
+            25,
+        )
+
+        # =========================================================
+    # PRODUCT LIST SEARCH / FILTER / PAGINATION TESTS
+    # =========================================================
+
+    def test_product_list_search_by_name(
+        self,
+    ):
+
+        response = self.client.get(
+            reverse("products:list"),
+            {
+                "q": "Premium Face Serum",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            self.product.name,
+        )
+
+
+    def test_product_list_search_by_sku(
+        self,
+    ):
+
+        response = self.client.get(
+            reverse("products:list"),
+            {
+                "q": self.product.sku,
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            self.product.name,
+        )
+
+
+    def test_product_list_filters_archived_products(
+        self,
+    ):
+
+        self.product.is_active = False
+
+        self.product.save(
+            update_fields=[
+                "is_active",
+            ]
+        )
+
+        response = self.client.get(
+            reverse("products:list"),
+            {
+                "status": "inactive",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            self.product.name,
+        )
+
+
+    def test_product_list_all_status_shows_active_and_inactive(
+        self,
+    ):
+
+        archived_product = Product.objects.create(
+            business=self.business,
+            name="Archived Product",
+            sku="ARCH-001",
+            selling_price="500.00",
+            cost_price="300.00",
+            stock_quantity=5,
+            low_stock_threshold=2,
+            is_active=False,
+        )
+
+        response = self.client.get(
+            reverse("products:list"),
+            {
+                "status": "all",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            self.product.name,
+        )
+
+        self.assertContains(
+            response,
+            archived_product.name,
+        )
+
+
+    def test_product_list_filters_low_stock(
+        self,
+    ):
+
+        self.product.stock_quantity = 3
+
+        self.product.low_stock_threshold = 5
+
+        self.product.save(
+            update_fields=[
+                "stock_quantity",
+                "low_stock_threshold",
+            ]
+        )
+
+        response = self.client.get(
+            reverse("products:list"),
+            {
+                "stock": "low",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            self.product.name,
+        )
+
+
+    def test_product_list_filters_out_of_stock(
+        self,
+    ):
+
+        self.product.stock_quantity = 0
+
+        self.product.save(
+            update_fields=[
+                "stock_quantity",
+            ]
+        )
+
+        response = self.client.get(
+            reverse("products:list"),
+            {
+                "stock": "out",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            self.product.name,
+        )
+
+
+    def test_product_list_paginates_results(
+        self,
+    ):
+
+        for index in range(15):
+
+            Product.objects.create(
+                business=self.business,
+                name=f"Product {index}",
+                sku=f"PROD-{index:03d}",
+                selling_price="500.00",
+                cost_price="300.00",
+                stock_quantity=10,
+                low_stock_threshold=2,
+                is_active=True,
+            )
+
+        response = self.client.get(
+            reverse("products:list")
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        page_obj = (
+            response.context[
+                "page_obj"
+            ]
+        )
+
+        self.assertEqual(
+            len(
+                response.context[
+                    "products"
+                ]
+            ),
+            10,
+        )
+
+        self.assertTrue(
+            page_obj.has_next()
+        )
+
+
+    def test_product_filter_query_preserves_values(
+        self,
+    ):
+
+        response = self.client.get(
+            reverse("products:list"),
+            {
+                "q": "Serum",
+                "status": "all",
+                "stock": "low",
+                "page": "2",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        filter_query = (
+            response.context[
+                "filter_query"
+            ]
+        )
+
+        self.assertIn(
+            "q=Serum",
+            filter_query,
+        )
+
+        self.assertIn(
+            "status=all",
+            filter_query,
+        )
+
+        self.assertIn(
+            "stock=low",
+            filter_query,
+        )
+
+        self.assertNotIn(
+            "page=",
+            filter_query,
+        )
+
+
+    def test_product_search_respects_business_isolation(
+        self,
+    ):
+
+        response = self.client.get(
+            reverse("products:list"),
+            {
+                "q":
+                    self.other_product.name,
+
+                "status":
+                    "all",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        products = (
+            response.context[
+                "products"
+            ]
+        )
+
+        self.assertNotIn(
+            self.other_product,
+            products,
+        )
+
+        self.assertEqual(
+            len(products),
+            0,
         )

@@ -9,7 +9,13 @@
 {% endblock %}
 
 {% block page_subheading %}
+
+{% if is_edit %}
+Correct order information safely without breaking payment or inventory history.
+{% else %}
 Create a new customer order.
+{% endif %}
+
 {% endblock %}
 
 
@@ -19,7 +25,9 @@ Create a new customer order.
 
     {% csrf_token %}
 
-    {{ formset.management_form }}
+    {% if formset %}
+        {{ formset.management_form }}
+    {% endif %}
 
 
     {% if form.non_field_errors %}
@@ -40,16 +48,37 @@ Create a new customer order.
             <section class="panel">
 
                 <div class="panel-header">
+
                     <div>
-                        <h2>Order Information</h2>
-                        <p>Select customer, order status and payment method.</p>
+
+                        <h2>
+                            Order Information
+                        </h2>
+
+                        {% if is_edit %}
+
+                            <p>
+                                Review and safely update order information.
+                            </p>
+
+                        {% else %}
+
+                            <p>
+                                Select customer, order status and payment method.
+                            </p>
+
+                        {% endif %}
+
                     </div>
+
                 </div>
 
 
                 <div class="form-section">
 
                     <div class="form-grid">
+
+                        <!-- CUSTOMER -->
 
                         <div class="form-group">
 
@@ -64,13 +93,25 @@ Create a new customer order.
                             {{ form.customer }}
 
                             {% if form.customer.errors %}
+
                                 <div class="form-error">
                                     {{ form.customer.errors|striptags }}
                                 </div>
+
+                            {% endif %}
+
+                            {% if is_edit and not financial_editable %}
+
+                                <div class="form-help">
+                                    Customer changes are locked for this order status.
+                                </div>
+
                             {% endif %}
 
                         </div>
 
+
+                        <!-- ORDER STATUS -->
 
                         <div class="form-group">
 
@@ -84,13 +125,25 @@ Create a new customer order.
                             {{ form.status }}
 
                             {% if form.status.errors %}
+
                                 <div class="form-error">
                                     {{ form.status.errors|striptags }}
                                 </div>
+
+                            {% endif %}
+
+                            {% if is_edit %}
+
+                                <div class="form-help">
+                                    Change order status from the order details page.
+                                </div>
+
                             {% endif %}
 
                         </div>
 
+
+                        <!-- PAYMENT METHOD -->
 
                         <div class="form-group">
 
@@ -104,9 +157,19 @@ Create a new customer order.
                             {{ form.payment_method }}
 
                             {% if form.payment_method.errors %}
+
                                 <div class="form-error">
                                     {{ form.payment_method.errors|striptags }}
                                 </div>
+
+                            {% endif %}
+
+                            {% if is_edit and not financial_editable %}
+
+                                <div class="form-help">
+                                    Payment method changes are locked for this order status.
+                                </div>
+
                             {% endif %}
 
                         </div>
@@ -130,112 +193,216 @@ Create a new customer order.
                 <div class="panel-header">
 
                     <div>
-                        <h2>Products</h2>
-                        <p>Add one or more products to this order.</p>
+
+                        <h2>
+                            Products
+                        </h2>
+
+                        {% if is_edit and not can_edit_items %}
+
+                            <p>
+                                Product changes are locked after this order reaches
+                                shipping or a final state.
+                            </p>
+
+                        {% else %}
+
+                            <p>
+                                Add one or more products to this order.
+                            </p>
+
+                        {% endif %}
+
                     </div>
 
-                    <button
-                        type="button"
-                        class="btn btn-secondary"
-                        id="addOrderItem"
-                    >
-                        + Add Product
-                    </button>
+
+                    {% if not is_edit or can_edit_items %}
+
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            id="addOrderItem"
+                        >
+                            + Add Product
+                        </button>
+
+                    {% endif %}
 
                 </div>
 
 
-                {% if formset.non_form_errors %}
+                {% if formset %}
+
+                    {% if formset.non_form_errors %}
+
+                        <div
+                            class="alert alert-danger"
+                            style="margin: 20px 20px 0;"
+                        >
+                            {{ formset.non_form_errors }}
+                        </div>
+
+                    {% endif %}
+
+
                     <div
-                        class="alert alert-danger"
-                        style="margin: 20px 20px 0;"
+                        class="order-items"
+                        id="orderItems"
                     >
-                        {{ formset.non_form_errors }}
+
+                        {% for item_form in formset %}
+
+                            <div class="order-item-row">
+
+                                {{ item_form.id }}
+
+
+                                <!-- PRODUCT -->
+
+                                <div class="form-group">
+
+                                    <label
+                                        for="{{ item_form.product.id_for_label }}"
+                                        class="form-label"
+                                    >
+                                        Product
+                                        <span class="required">*</span>
+                                    </label>
+
+                                    {{ item_form.product }}
+
+                                    {% if item_form.product.errors %}
+
+                                        <div class="form-error">
+                                            {{ item_form.product.errors|striptags }}
+                                        </div>
+
+                                    {% endif %}
+
+                                </div>
+
+
+                                <!-- QUANTITY -->
+
+                                <div class="form-group">
+
+                                    <label
+                                        for="{{ item_form.quantity.id_for_label }}"
+                                        class="form-label"
+                                    >
+                                        Quantity
+                                    </label>
+
+                                    {{ item_form.quantity }}
+
+                                    {% if item_form.quantity.errors %}
+
+                                        <div class="form-error">
+                                            {{ item_form.quantity.errors|striptags }}
+                                        </div>
+
+                                    {% endif %}
+
+                                </div>
+
+
+                                {% if item_form.DELETE %}
+
+                                    <div class="order-delete-field">
+                                        {{ item_form.DELETE }}
+                                    </div>
+
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-ghost remove-order-item"
+                                    >
+                                        Remove
+                                    </button>
+
+                                {% endif %}
+
+
+                                {% if item_form.non_field_errors %}
+
+                                    <div class="form-error">
+                                        {{ item_form.non_field_errors|striptags }}
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+                        {% endfor %}
+
                     </div>
-                {% endif %}
 
 
-                <div
-                    class="order-items"
-                    id="orderItems"
-                >
+                {% else %}
 
-                    {% for item_form in formset %}
+                    <!-- LOCKED PRODUCT VIEW -->
 
-                        <div class="order-item-row">
+                    <div class="form-section">
 
-                            {{ item_form.id }}
+                        <div class="order-summary-note">
 
+                            This order is already
 
-                            <div class="form-group">
+                            <strong>
+                                {{ order.get_status_display }}
+                            </strong>.
 
-                                <label
-                                    for="{{ item_form.product.id_for_label }}"
-                                    class="form-label"
-                                >
-                                    Product
-                                    <span class="required">*</span>
-                                </label>
-
-                                {{ item_form.product }}
-
-                                {% if item_form.product.errors %}
-                                    <div class="form-error">
-                                        {{ item_form.product.errors|striptags }}
-                                    </div>
-                                {% endif %}
-
-                            </div>
-
-
-                            <div class="form-group">
-
-                                <label
-                                    for="{{ item_form.quantity.id_for_label }}"
-                                    class="form-label"
-                                >
-                                    Quantity
-                                </label>
-
-                                {{ item_form.quantity }}
-
-                                {% if item_form.quantity.errors %}
-                                    <div class="form-error">
-                                        {{ item_form.quantity.errors|striptags }}
-                                    </div>
-                                {% endif %}
-
-                            </div>
-
-
-                            {% if item_form.DELETE %}
-
-                                <div class="order-delete-field">
-                                    {{ item_form.DELETE }}
-                                </div>
-
-
-                                <button
-                                    type="button"
-                                    class="btn btn-ghost remove-order-item"
-                                >
-                                    Remove
-                                </button>
-
-                            {% endif %}
-
-
-                            {% if item_form.non_field_errors %}
-                                <div class="form-error">
-                                    {{ item_form.non_field_errors|striptags }}
-                                </div>
-                            {% endif %}
+                            Product, quantity, discount and customer
+                            changes are locked to protect inventory
+                            and financial history.
 
                         </div>
 
-                    {% endfor %}
 
-                </div>
+                        <div style="height: 16px;"></div>
+
+
+                        <div class="detail-list">
+
+                            {% for item in order.items.all %}
+
+                                <div class="detail-row">
+
+                                    <span>
+
+                                        {{ item.product_name }}
+
+                                        <span
+                                            style="
+                                                opacity: .65;
+                                                margin-left: 4px;
+                                            "
+                                        >
+                                            × {{ item.quantity }}
+                                        </span>
+
+                                    </span>
+
+
+                                    <strong>
+                                        ৳{{ item.line_total }}
+                                    </strong>
+
+                                </div>
+
+                            {% empty %}
+
+                                <div class="order-summary-note">
+                                    No products found for this order.
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
+
+                {% endif %}
 
             </section>
 
@@ -252,8 +419,25 @@ Create a new customer order.
                 <div class="panel-header">
 
                     <div>
-                        <h2>Delivery Information</h2>
-                        <p>Add courier and delivery details if available.</p>
+
+                        <h2>
+                            Delivery Information
+                        </h2>
+
+                        {% if is_edit %}
+
+                            <p>
+                                Correct courier, tracking and delivery information.
+                            </p>
+
+                        {% else %}
+
+                            <p>
+                                Add courier and delivery details if available.
+                            </p>
+
+                        {% endif %}
+
                     </div>
 
                 </div>
@@ -262,6 +446,8 @@ Create a new customer order.
                 <div class="form-section">
 
                     <div class="form-grid">
+
+                        <!-- COURIER -->
 
                         <div class="form-group">
 
@@ -275,13 +461,17 @@ Create a new customer order.
                             {{ form.courier_name }}
 
                             {% if form.courier_name.errors %}
+
                                 <div class="form-error">
                                     {{ form.courier_name.errors|striptags }}
                                 </div>
+
                             {% endif %}
 
                         </div>
 
+
+                        <!-- TRACKING NUMBER -->
 
                         <div class="form-group">
 
@@ -295,15 +485,19 @@ Create a new customer order.
                             {{ form.tracking_number }}
 
                             {% if form.tracking_number.errors %}
+
                                 <div class="form-error">
                                     {{ form.tracking_number.errors|striptags }}
                                 </div>
+
                             {% endif %}
 
                         </div>
 
                     </div>
 
+
+                    <!-- DELIVERY ADDRESS -->
 
                     <div class="form-group">
 
@@ -317,13 +511,17 @@ Create a new customer order.
                         {{ form.delivery_address }}
 
                         {% if form.delivery_address.errors %}
+
                             <div class="form-error">
                                 {{ form.delivery_address.errors|striptags }}
                             </div>
+
                         {% endif %}
 
                     </div>
 
+
+                    <!-- NOTES -->
 
                     <div class="form-group">
 
@@ -337,9 +535,11 @@ Create a new customer order.
                         {{ form.notes }}
 
                         {% if form.notes.errors %}
+
                             <div class="form-error">
                                 {{ form.notes.errors|striptags }}
                             </div>
+
                         {% endif %}
 
                     </div>
@@ -362,14 +562,43 @@ Create a new customer order.
                 <div class="panel-header">
 
                     <div>
-                        <h2>Order Summary</h2>
-                        <p>Enter discount, delivery charge and payment amount.</p>
+
+                        <h2>
+                            Order Summary
+                        </h2>
+
+                        {% if is_edit %}
+
+                            {% if financial_editable %}
+
+                                <p>
+                                    Safely correct pricing and order totals.
+                                </p>
+
+                            {% else %}
+
+                                <p>
+                                    Financial information is locked for this order.
+                                </p>
+
+                            {% endif %}
+
+                        {% else %}
+
+                            <p>
+                                Enter discount, delivery charge and payment amount.
+                            </p>
+
+                        {% endif %}
+
                     </div>
 
                 </div>
 
 
                 <div class="form-section">
+
+                    <!-- DISCOUNT -->
 
                     <div class="form-group">
 
@@ -383,13 +612,17 @@ Create a new customer order.
                         {{ form.discount }}
 
                         {% if form.discount.errors %}
+
                             <div class="form-error">
                                 {{ form.discount.errors|striptags }}
                             </div>
+
                         {% endif %}
 
                     </div>
 
+
+                    <!-- DELIVERY CHARGE -->
 
                     <div class="form-group">
 
@@ -403,13 +636,17 @@ Create a new customer order.
                         {{ form.delivery_charge }}
 
                         {% if form.delivery_charge.errors %}
+
                             <div class="form-error">
                                 {{ form.delivery_charge.errors|striptags }}
                             </div>
+
                         {% endif %}
 
                     </div>
 
+
+                    <!-- PAID AMOUNT -->
 
                     <div class="form-group">
 
@@ -423,44 +660,147 @@ Create a new customer order.
                         {{ form.paid_amount }}
 
                         {% if form.paid_amount.errors %}
+
                             <div class="form-error">
                                 {{ form.paid_amount.errors|striptags }}
                             </div>
+
                         {% endif %}
 
+
                         <div class="form-help">
-                            Payment status will be calculated automatically.
+
+                            {% if is_edit %}
+
+                                Recorded payments cannot be changed here.
+                                Use the payment or refund workflow from
+                                the order details page.
+
+                            {% else %}
+
+                                Payment status will be calculated automatically.
+
+                            {% endif %}
+
                         </div>
 
                     </div>
 
 
+                    <!-- SUMMARY NOTE -->
+
                     <div class="order-summary-note">
 
-                        Product prices, totals and payment status are
-                        calculated and verified by the server when the
-                        order is saved.
+                        {% if is_edit %}
+
+                            {% if financial_editable %}
+
+                                Product quantities and totals will be
+                                recalculated safely.
+
+                                Existing payment and refund history
+                                will remain unchanged.
+
+                            {% else %}
+
+                                Financial and product fields are locked
+                                for this order status.
+
+                                Only safe operational information can
+                                be corrected.
+
+                            {% endif %}
+
+                        {% else %}
+
+                            Product prices, totals and payment status are
+                            calculated and verified by the server when the
+                            order is saved.
+
+                        {% endif %}
 
                     </div>
+
+
+                    {% if is_edit %}
+
+                        <div style="height: 14px;"></div>
+
+
+                        <div class="order-summary-note">
+
+                            <strong>
+                                Current Order
+                            </strong>
+
+                            <br><br>
+
+                            Status:
+                            {{ order.get_status_display }}
+
+                            <br>
+
+                            Total:
+                            ৳{{ order.total_amount }}
+
+                            <br>
+
+                            Net Paid:
+                            ৳{{ order.net_paid_amount }}
+
+                            <br>
+
+                            Refunded:
+                            ৳{{ order.refunded_amount }}
+
+                            <br>
+
+                            Due:
+                            ৳{{ order.due_amount }}
+
+                        </div>
+
+                    {% endif %}
 
                 </div>
 
 
+                <!-- ACTIONS -->
+
                 <div class="form-actions">
 
-                    <a
-                        href="{% url 'orders:list' %}"
-                        class="btn btn-secondary"
-                    >
-                        Cancel
-                    </a>
+                    {% if is_edit %}
+
+                        <a
+                            href="{% url 'orders:detail' order.pk %}"
+                            class="btn btn-secondary"
+                        >
+                            Cancel
+                        </a>
+
+                    {% else %}
+
+                        <a
+                            href="{% url 'orders:list' %}"
+                            class="btn btn-secondary"
+                        >
+                            Cancel
+                        </a>
+
+                    {% endif %}
 
 
                     <button
                         type="submit"
                         class="btn btn-primary"
                     >
-                        Create Order
+
+                        {% if is_edit %}
+                            Save Changes
+                        {% else %}
+                            Create Order
+                        {% endif %}
+
                     </button>
 
                 </div>
@@ -478,56 +818,65 @@ Create a new customer order.
      Empty Order Item Template
 ========================== -->
 
-<template id="emptyOrderItemTemplate">
+{% if formset %}
 
-    <div class="order-item-row">
+    <template id="emptyOrderItemTemplate">
 
-        {{ formset.empty_form.id }}
+        <div class="order-item-row">
+
+            {{ formset.empty_form.id }}
 
 
-        <div class="form-group">
+            <!-- PRODUCT -->
 
-            <label
-                for="{{ formset.empty_form.product.id_for_label }}"
-                class="form-label"
+            <div class="form-group">
+
+                <label
+                    for="{{ formset.empty_form.product.id_for_label }}"
+                    class="form-label"
+                >
+                    Product
+                    <span class="required">*</span>
+                </label>
+
+                {{ formset.empty_form.product }}
+
+            </div>
+
+
+            <!-- QUANTITY -->
+
+            <div class="form-group">
+
+                <label
+                    for="{{ formset.empty_form.quantity.id_for_label }}"
+                    class="form-label"
+                >
+                    Quantity
+                </label>
+
+                {{ formset.empty_form.quantity }}
+
+            </div>
+
+
+            <div class="order-delete-field">
+                {{ formset.empty_form.DELETE }}
+            </div>
+
+
+            <button
+                type="button"
+                class="btn btn-ghost remove-order-item"
             >
-                Product
-                <span class="required">*</span>
-            </label>
-
-            {{ formset.empty_form.product }}
+                Remove
+            </button>
 
         </div>
 
+    </template>
 
-        <div class="form-group">
+{% endif %}
 
-            <label
-                for="{{ formset.empty_form.quantity.id_for_label }}"
-                class="form-label"
-            >
-                Quantity
-            </label>
-
-            {{ formset.empty_form.quantity }}
-
-        </div>
-
-
-        <div class="order-delete-field">
-            {{ formset.empty_form.DELETE }}
-        </div>
-
-
-        <button
-            type="button"
-            class="btn btn-ghost remove-order-item"
-        >
-            Remove
-        </button>
-
-    </div>
-
-</template>
 
 {% endblock %}

@@ -14,6 +14,7 @@ from .models import (
     OrderRefund,
 )
 
+from django.db.models import Q
 
 # =========================================================
 # ORDER FORM
@@ -115,6 +116,8 @@ class OrderForm(forms.ModelForm):
         self,
         *args,
         business=None,
+        edit_mode=False,
+        financial_editable=True,
         **kwargs,
     ):
         super().__init__(
@@ -123,19 +126,107 @@ class OrderForm(forms.ModelForm):
         )
 
         self.business = business
-
-        self.fields[
-            "customer"
-        ].queryset = (
-            Customer.objects
-            .filter(
-                business=business,
-                is_active=True,
-            )
-            .order_by(
-                "full_name"
-            )
+        self.edit_mode = edit_mode
+        self.financial_editable = (
+            financial_editable
         )
+
+        # =====================================================
+        # CUSTOMER QUERYSET
+        #
+        # Include the currently selected customer even if that
+        # customer has since been archived/inactivated.
+        # =====================================================
+
+        if business:
+
+            customer_queryset = (
+                Customer.objects
+                .filter(
+                    business=business,
+                )
+            )
+
+            current_customer_id = (
+                getattr(
+                    self.instance,
+                    "customer_id",
+                    None,
+                )
+            )
+
+            if current_customer_id:
+
+                customer_queryset = (
+                    customer_queryset
+                    .filter(
+                        Q(is_active=True)
+                        | Q(
+                            pk=current_customer_id
+                        )
+                    )
+                )
+
+            else:
+
+                customer_queryset = (
+                    customer_queryset
+                    .filter(
+                        is_active=True,
+                    )
+                )
+
+            self.fields[
+                "customer"
+            ].queryset = (
+                customer_queryset
+                .order_by(
+                    "full_name"
+                )
+            )
+
+        else:
+
+            self.fields[
+                "customer"
+            ].queryset = (
+                Customer.objects.none()
+            )
+
+        # =====================================================
+        # EDIT MODE SAFETY
+        # =====================================================
+
+        if edit_mode:
+
+            # Status changes must always go through the
+            # dedicated status workflow.
+            self.fields[
+                "status"
+            ].disabled = True
+
+            # Payment totals must only change through
+            # payment/refund history.
+            self.fields[
+                "paid_amount"
+            ].disabled = True
+
+            if not financial_editable:
+
+                # Shipped / delivered / returned /
+                # cancelled orders only allow operational
+                # information corrections.
+
+                for field_name in [
+                    "customer",
+                    "payment_method",
+                    "discount",
+                    "delivery_charge",
+                ]:
+
+                    self.fields[
+                        field_name
+                    ].disabled = True
 
     def clean_customer(self):
 
@@ -146,15 +237,16 @@ class OrderForm(forms.ModelForm):
 
         if (
             customer
+            and self.business
             and customer.business_id
             != self.business.id
         ):
+
             raise forms.ValidationError(
                 "Invalid customer selected."
             )
 
         return customer
-
 
 # =========================================================
 # ORDER ITEM FORM
@@ -202,18 +294,60 @@ class OrderItemForm(forms.ModelForm):
 
         self.business = business
 
-        self.fields[
-            "product"
-        ].queryset = (
-            Product.objects
-            .filter(
-                business=business,
-                is_active=True,
+        if business:
+
+            product_queryset = (
+                Product.objects
+                .filter(
+                    business=business,
+                )
             )
-            .order_by(
-                "name"
+
+            current_product_id = (
+                getattr(
+                    self.instance,
+                    "product_id",
+                    None,
+                )
             )
-        )
+
+            if current_product_id:
+
+                product_queryset = (
+                    product_queryset
+                    .filter(
+                        Q(is_active=True)
+                        | Q(
+                            pk=current_product_id
+                        )
+                    )
+                )
+
+            else:
+
+                product_queryset = (
+                    product_queryset
+                    .filter(
+                        is_active=True,
+                    )
+                )
+
+            self.fields[
+                "product"
+            ].queryset = (
+                product_queryset
+                .order_by(
+                    "name"
+                )
+            )
+
+        else:
+
+            self.fields[
+                "product"
+            ].queryset = (
+                Product.objects.none()
+            )
 
     def clean_product(self):
 
@@ -224,15 +358,16 @@ class OrderItemForm(forms.ModelForm):
 
         if (
             product
+            and self.business
             and product.business_id
             != self.business.id
         ):
+
             raise forms.ValidationError(
                 "Invalid product selected."
             )
 
         return product
-
 
 OrderItemFormSet = inlineformset_factory(
     Order,

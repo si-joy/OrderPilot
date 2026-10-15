@@ -9,24 +9,57 @@ Orders
 {% endblock %}
 
 {% block page_subheading %}
-Manage customer orders and payments.
+Search, filter and manage customer orders.
 {% endblock %}
 
 
 {% block content %}
 
 {% if messages %}
+
     {% for message in messages %}
-        <div class="alert alert-success">
+
+        <div
+            class="alert
+            {% if message.tags == 'error' %}
+                alert-danger
+            {% else %}
+                alert-success
+            {% endif %}
+            "
+        >
             {{ message }}
         </div>
+
     {% endfor %}
+
 {% endif %}
 
 
+<!-- =====================================================
+     TOOLBAR
+====================================================== -->
+
 <div class="page-toolbar">
 
-    <div></div>
+    <div>
+
+        {% if page_obj %}
+
+            <span
+                style="
+                    font-size: .9rem;
+                    opacity: .7;
+                "
+            >
+                {{ page_obj.paginator.count }}
+                order{{ page_obj.paginator.count|pluralize }}
+            </span>
+
+        {% endif %}
+
+    </div>
+
 
     <a
         href="{% url 'orders:create' %}"
@@ -38,110 +71,604 @@ Manage customer orders and payments.
 </div>
 
 
+<!-- =====================================================
+     SEARCH + FILTERS
+====================================================== -->
+
+<section class="panel">
+
+    <form
+        method="get"
+        action="{% url 'orders:list' %}"
+    >
+
+        <div class="form-section">
+
+            <!-- =============================================
+                 SEARCH
+            ============================================== -->
+
+            <div class="form-group">
+
+                <label
+                    for="order-search"
+                    class="form-label"
+                >
+                    Search Orders
+                </label>
+
+                <input
+                    type="search"
+                    id="order-search"
+                    name="q"
+                    value="{{ query }}"
+                    class="form-control"
+                    placeholder="Order number, customer, phone, tracking..."
+                >
+
+            </div>
+
+
+            <!-- =============================================
+                 FILTER GRID
+            ============================================== -->
+
+            <div class="form-grid">
+
+                <!-- ORDER STATUS -->
+
+                <div class="form-group">
+
+                    <label
+                        for="order-status"
+                        class="form-label"
+                    >
+                        Order Status
+                    </label>
+
+                    <select
+                        id="order-status"
+                        name="status"
+                        class="form-control"
+                    >
+
+                        <option value="">
+                            All statuses
+                        </option>
+
+                        {% for value, label in status_choices %}
+
+                            <option
+                                value="{{ value }}"
+                                {% if status == value %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ label }}
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <!-- PAYMENT STATUS -->
+
+                <div class="form-group">
+
+                    <label
+                        for="payment-status"
+                        class="form-label"
+                    >
+                        Payment Status
+                    </label>
+
+                    <select
+                        id="payment-status"
+                        name="payment_status"
+                        class="form-control"
+                    >
+
+                        <option value="">
+                            All payments
+                        </option>
+
+                        {% for value, label in payment_status_choices %}
+
+                            <option
+                                value="{{ value }}"
+                                {% if payment_status == value %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ label }}
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <!-- DATE FROM -->
+
+                <div class="form-group">
+
+                    <label
+                        for="date-from"
+                        class="form-label"
+                    >
+                        From Date
+                    </label>
+
+                    <input
+                        type="date"
+                        id="date-from"
+                        name="date_from"
+                        value="{{ date_from }}"
+                        class="form-control"
+                    >
+
+                </div>
+
+
+                <!-- DATE TO -->
+
+                <div class="form-group">
+
+                    <label
+                        for="date-to"
+                        class="form-label"
+                    >
+                        To Date
+                    </label>
+
+                    <input
+                        type="date"
+                        id="date-to"
+                        name="date_to"
+                        value="{{ date_to }}"
+                        class="form-control"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <!-- =============================================
+                 FILTER ACTIONS
+            ============================================== -->
+
+            <div
+                class="form-actions"
+                style="
+                    padding-left: 0;
+                    padding-right: 0;
+                    padding-bottom: 0;
+                "
+            >
+
+                <a
+                    href="{% url 'orders:list' %}"
+                    class="btn btn-secondary"
+                >
+                    Clear Filters
+                </a>
+
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    Apply Filters
+                </button>
+
+            </div>
+
+        </div>
+
+    </form>
+
+</section>
+
+
+<div style="height: 18px;"></div>
+
+
+<!-- =====================================================
+     ORDER TABLE
+====================================================== -->
+
 {% if orders %}
 
-<div class="table-wrapper">
+    <section class="panel op-table-panel">
 
-    <table class="data-table">
+        <div class="op-table-wrapper">
 
-        <thead>
-            <tr>
-                <th>Order</th>
-                <th>Customer</th>
-                <th>Status</th>
-                <th>Payment</th>
-                <th>Total</th>
-                <th>Due</th>
-                <th>Created</th>
-                <th></th>
-            </tr>
-        </thead>
+            <table class="data-table">
 
-        <tbody>
+                <thead>
 
-            {% for order in orders %}
+                    <tr>
 
-                <tr>
+                        <th>
+                            Order
+                        </th>
 
-                    <td>
-                        <a
-                            href="{% url 'orders:detail' order.pk %}"
-                            class="order-number-link"
-                        >
-                            {{ order.order_number }}
-                        </a>
-                    </td>
+                        <th>
+                            Customer
+                        </th>
 
-                    <td>
-                        {{ order.customer.full_name }}
-                    </td>
+                        <th>
+                            Status
+                        </th>
 
-                    <td>
-                        {{ order.get_status_display }}
-                    </td>
+                        <th>
+                            Payment
+                        </th>
 
-                    <td>
-                        {{ order.get_payment_status_display }}
-                    </td>
+                        <th>
+                            Total
+                        </th>
 
-                    <td>
-                        ৳{{ order.total_amount }}
-                    </td>
+                        <th>
+                            Net Paid
+                        </th>
 
-                    <td>
-                        ৳{{ order.due_amount }}
-                    </td>
+                        <th>
+                            Due
+                        </th>
 
-                    <td>
-                        {{ order.created_at|date:"d M Y" }}
-                    </td>
+                        <th>
+                            Created
+                        </th>
 
-                    <td>
-                        <a
-                            href="{% url 'orders:detail' order.pk %}"
-                            class="table-action"
-                        >
-                            View
-                        </a>
-                    </td>
+                        <th></th>
 
-                </tr>
+                    </tr>
 
-            {% endfor %}
+                </thead>
 
-        </tbody>
 
-    </table>
+                <tbody>
 
-</div>
+                    {% for order in orders %}
+
+                        <tr>
+
+                            <!-- ORDER -->
+
+                            <td>
+
+                                <a
+                                    href="{% url 'orders:detail' order.pk %}"
+                                    class="order-number-link"
+                                >
+                                    {{ order.order_number }}
+                                </a>
+
+                            </td>
+
+
+                            <!-- CUSTOMER -->
+
+                            <td>
+
+                                <strong>
+                                    {{ order.customer.full_name }}
+                                </strong>
+
+                                {% if order.customer.phone %}
+
+                                    <div
+                                        style="
+                                            font-size: .82rem;
+                                            opacity: .65;
+                                            margin-top: 3px;
+                                        "
+                                    >
+                                        {{ order.customer.phone }}
+                                    </div>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- STATUS -->
+
+                            <td>
+
+                                {% if order.status == "delivered" %}
+
+                                    {% include "components/badge.html" with text=order.get_status_display type="success" %}
+
+                                {% elif order.status == "cancelled" or order.status == "returned" %}
+
+                                    {% include "components/badge.html" with text=order.get_status_display type="danger" %}
+
+                                {% elif order.status == "shipped" %}
+
+                                    {% include "components/badge.html" with text=order.get_status_display type="warning" %}
+
+                                {% else %}
+
+                                    {% include "components/badge.html" with text=order.get_status_display type="neutral" %}
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- PAYMENT -->
+
+                            <td>
+
+                                {% if order.payment_status == "paid" %}
+
+                                    {% include "components/badge.html" with text=order.get_payment_status_display type="success" %}
+
+                                {% elif order.payment_status == "partial" %}
+
+                                    {% include "components/badge.html" with text=order.get_payment_status_display type="warning" %}
+
+                                {% elif order.payment_status == "refunded" %}
+
+                                    {% include "components/badge.html" with text=order.get_payment_status_display type="danger" %}
+
+                                {% else %}
+
+                                    {% include "components/badge.html" with text=order.get_payment_status_display type="neutral" %}
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- TOTAL -->
+
+                            <td>
+
+                                <strong>
+                                    ৳{{ order.total_amount }}
+                                </strong>
+
+                            </td>
+
+
+                            <!-- NET PAID -->
+
+                            <td>
+
+                                ৳{{ order.net_paid_amount }}
+
+                            </td>
+
+
+                            <!-- DUE -->
+
+                            <td>
+
+                                {% if order.due_amount > 0 %}
+
+                                    <strong>
+                                        ৳{{ order.due_amount }}
+                                    </strong>
+
+                                {% else %}
+
+                                    ৳0.00
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- CREATED -->
+
+                            <td>
+
+                                {{ order.created_at|date:"d M Y" }}
+
+                                <div
+                                    style="
+                                        font-size: .78rem;
+                                        opacity: .6;
+                                        margin-top: 3px;
+                                    "
+                                >
+                                    {{ order.created_at|date:"h:i A" }}
+                                </div>
+
+                            </td>
+
+
+                            <!-- ACTION -->
+
+                            <td>
+
+                                <a
+                                    href="{% url 'orders:detail' order.pk %}"
+                                    class="table-action"
+                                >
+                                    View
+                                </a>
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+    <!-- =================================================
+         PAGINATION
+    ================================================== -->
+
+    {% if page_obj.has_other_pages %}
+
+        <div
+            class="page-toolbar"
+            style="margin-top: 18px;"
+        >
+
+            <div>
+
+                <span
+                    style="
+                        font-size: .9rem;
+                        opacity: .7;
+                    "
+                >
+                    Page
+                    {{ page_obj.number }}
+                    of
+                    {{ page_obj.paginator.num_pages }}
+                </span>
+
+            </div>
+
+
+            <div class="detail-actions">
+
+                <!-- FIRST -->
+
+                {% if page_obj.number > 2 %}
+
+                    <a
+                        href="?{% if filter_query %}{{ filter_query }}&{% endif %}page=1"
+                        class="btn btn-secondary"
+                    >
+                        First
+                    </a>
+
+                {% endif %}
+
+
+                <!-- PREVIOUS -->
+
+                {% if page_obj.has_previous %}
+
+                    <a
+                        href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.previous_page_number }}"
+                        class="btn btn-secondary"
+                    >
+                        ← Previous
+                    </a>
+
+                {% endif %}
+
+
+                <!-- CURRENT -->
+
+                <span
+                    class="btn btn-primary"
+                    style="pointer-events: none;"
+                >
+                    {{ page_obj.number }}
+                </span>
+
+
+                <!-- NEXT -->
+
+                {% if page_obj.has_next %}
+
+                    <a
+                        href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.next_page_number }}"
+                        class="btn btn-secondary"
+                    >
+                        Next →
+                    </a>
+
+                {% endif %}
+
+
+                <!-- LAST -->
+
+                {% if page_obj.number < page_obj.paginator.num_pages|add:"-1" %}
+
+                    <a
+                        href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.paginator.num_pages }}"
+                        class="btn btn-secondary"
+                    >
+                        Last
+                    </a>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    {% endif %}
 
 
 {% else %}
 
-<div class="panel">
+    <!-- =================================================
+         FILTERED EMPTY STATE
+    ================================================== -->
 
-    <div class="empty-state">
+    <section class="panel">
 
-        <div class="empty-icon">
-            ◎
+        <div class="empty-state">
+
+            <div class="empty-icon">
+                ◎
+            </div>
+
+
+            {% if query or status or payment_status or date_from or date_to %}
+
+                <h3>
+                    No matching orders
+                </h3>
+
+                <p>
+                    No orders matched your current search or filters.
+                </p>
+
+                <a
+                    href="{% url 'orders:list' %}"
+                    class="btn btn-secondary"
+                >
+                    Clear Filters
+                </a>
+
+            {% else %}
+
+                <h3>
+                    No orders yet
+                </h3>
+
+                <p>
+                    Create your first customer order.
+                </p>
+
+                <a
+                    href="{% url 'orders:create' %}"
+                    class="btn btn-primary"
+                >
+                    Create Order
+                </a>
+
+            {% endif %}
+
         </div>
 
-        <h3>No orders yet</h3>
-
-        <p>
-            Create your first customer order.
-        </p>
-
-        <a
-            href="{% url 'orders:create' %}"
-            class="btn btn-primary"
-        >
-            Create Order
-        </a>
-
-    </div>
-
-</div>
+    </section>
 
 {% endif %}
 

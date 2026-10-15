@@ -62,4 +62,10 @@ urlpatterns = [
         name="invoice_pdf",
     ),
 
+    path(
+        "<int:pk>/edit/",
+        views.order_edit,
+        name="edit",
+    ),
+
 ]

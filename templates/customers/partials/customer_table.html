@@ -46,12 +46,23 @@
 
                     <td>
 
-                        {% if customer.city %}
-                            {{ customer.city }}
-                        {% elif customer.district %}
+                        {% if customer.city and customer.district %}
+
+                            {{ customer.city }},
                             {{ customer.district }}
+
+                        {% elif customer.city %}
+
+                            {{ customer.city }}
+
+                        {% elif customer.district %}
+
+                            {{ customer.district }}
+
                         {% else %}
+
                             —
+
                         {% endif %}
 
                     </td>
@@ -73,7 +84,19 @@
 
 
                     <td>
+
                         {{ customer.created_at|date:"d M Y" }}
+
+                        <div
+                            style="
+                                font-size: .78rem;
+                                opacity: .6;
+                                margin-top: 3px;
+                            "
+                        >
+                            {{ customer.created_at|date:"h:i A" }}
+                        </div>
+
                     </td>
 
 
@@ -101,41 +124,93 @@
 
 {% if page_obj.paginator.num_pages > 1 %}
 
-<div class="pagination">
+<div
+    class="page-toolbar"
+    style="margin-top: 18px;"
+>
 
-    <div class="pagination-info">
-        Page {{ page_obj.number }}
-        of {{ page_obj.paginator.num_pages }}
+    <div>
+
+        <span
+            style="
+                font-size: .9rem;
+                opacity: .7;
+            "
+        >
+            Page
+            {{ page_obj.number }}
+            of
+            {{ page_obj.paginator.num_pages }}
+        </span>
+
     </div>
 
 
-    <div class="pagination-actions">
+    <div class="detail-actions">
 
-        {% if page_obj.has_previous %}
+        {% if page_obj.number > 2 %}
 
             <a
-                href="?q={{ query|urlencode }}&status={{ status }}&page={{ page_obj.previous_page_number }}"
-                hx-get="?q={{ query|urlencode }}&status={{ status }}&page={{ page_obj.previous_page_number }}"
+                href="?{% if filter_query %}{{ filter_query }}&{% endif %}page=1"
+                hx-get="?{% if filter_query %}{{ filter_query }}&{% endif %}page=1"
                 hx-target="#customerTableArea"
                 hx-push-url="true"
                 class="btn btn-secondary btn-small"
             >
-                Previous
+                First
             </a>
 
         {% endif %}
 
 
-        {% if page_obj.has_next %}
+        {% if page_obj.has_previous %}
 
             <a
-                href="?q={{ query|urlencode }}&status={{ status }}&page={{ page_obj.next_page_number }}"
-                hx-get="?q={{ query|urlencode }}&status={{ status }}&page={{ page_obj.next_page_number }}"
+                href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.previous_page_number }}"
+                hx-get="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.previous_page_number }}"
                 hx-target="#customerTableArea"
                 hx-push-url="true"
                 class="btn btn-secondary btn-small"
             >
-                Next
+                ← Previous
+            </a>
+
+        {% endif %}
+
+
+        <span
+            class="btn btn-primary btn-small"
+            style="pointer-events: none;"
+        >
+            {{ page_obj.number }}
+        </span>
+
+
+        {% if page_obj.has_next %}
+
+            <a
+                href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.next_page_number }}"
+                hx-get="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.next_page_number }}"
+                hx-target="#customerTableArea"
+                hx-push-url="true"
+                class="btn btn-secondary btn-small"
+            >
+                Next →
+            </a>
+
+        {% endif %}
+
+
+        {% if page_obj.number < page_obj.paginator.num_pages|add:"-1" %}
+
+            <a
+                href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.paginator.num_pages }}"
+                hx-get="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.paginator.num_pages }}"
+                hx-target="#customerTableArea"
+                hx-push-url="true"
+                class="btn btn-secondary btn-small"
+            >
+                Last
             </a>
 
         {% endif %}
@@ -157,20 +232,42 @@
             ♙
         </div>
 
-        <h3>
-            No customers found
-        </h3>
 
-        <p>
-            No customers match your current search or filter.
-        </p>
+        {% if query or status != "active" %}
 
-        <a
-            href="{% url 'customers:create' %}"
-            class="btn btn-primary"
-        >
-            Add Customer
-        </a>
+            <h3>
+                No matching customers
+            </h3>
+
+            <p>
+                No customers matched your current search or filter.
+            </p>
+
+            <a
+                href="{% url 'customers:list' %}"
+                class="btn btn-secondary"
+            >
+                Clear Filters
+            </a>
+
+        {% else %}
+
+            <h3>
+                No customers yet
+            </h3>
+
+            <p>
+                Add your first customer to start managing orders.
+            </p>
+
+            <a
+                href="{% url 'customers:create' %}"
+                class="btn btn-primary"
+            >
+                Add Customer
+            </a>
+
+        {% endif %}
 
     </div>
 

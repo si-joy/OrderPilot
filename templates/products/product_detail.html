@@ -16,13 +16,29 @@ Product details, pricing and inventory summary.
 {% block content %}
 
 {% if messages %}
+
     {% for message in messages %}
-        <div class="alert alert-success">
+
+        <div
+            class="alert
+            {% if message.tags == 'error' %}
+                alert-danger
+            {% else %}
+                alert-success
+            {% endif %}
+            "
+        >
             {{ message }}
         </div>
+
     {% endfor %}
+
 {% endif %}
 
+
+<!-- =====================================================
+     TOOLBAR
+====================================================== -->
 
 <div class="detail-toolbar">
 
@@ -88,15 +104,30 @@ Product details, pricing and inventory summary.
 </div>
 
 
+<!-- =====================================================
+     PRODUCT OVERVIEW
+====================================================== -->
+
 <div class="detail-grid">
+
+    <!-- =================================================
+         PRODUCT INFORMATION
+    ================================================== -->
 
     <section class="panel">
 
         <div class="panel-header">
 
             <div>
-                <h2>Product Information</h2>
-                <p>Basic product and pricing details.</p>
+
+                <h2>
+                    Product Information
+                </h2>
+
+                <p>
+                    Basic product and pricing details.
+                </p>
+
             </div>
 
 
@@ -116,33 +147,99 @@ Product details, pricing and inventory summary.
         <div class="detail-list">
 
             <div class="detail-row">
-                <span>Product Name</span>
-                <strong>{{ product.name }}</strong>
+
+                <span>
+                    Product Name
+                </span>
+
+                <strong>
+                    {{ product.name }}
+                </strong>
+
             </div>
 
-            <div class="detail-row">
-                <span>SKU</span>
-                <strong>{{ product.sku|default:"—" }}</strong>
-            </div>
 
             <div class="detail-row">
-                <span>Selling Price</span>
-                <strong>৳{{ product.selling_price }}</strong>
+
+                <span>
+                    SKU
+                </span>
+
+                <strong>
+                    {{ product.sku|default:"—" }}
+                </strong>
+
             </div>
 
-            <div class="detail-row">
-                <span>Cost Price</span>
-                <strong>৳{{ product.cost_price }}</strong>
-            </div>
 
             <div class="detail-row">
-                <span>Current Stock</span>
-                <strong>{{ product.stock_quantity }}</strong>
+
+                <span>
+                    Selling Price
+                </span>
+
+                <strong>
+                    ৳{{ product.selling_price }}
+                </strong>
+
             </div>
 
+
             <div class="detail-row">
-                <span>Low Stock Threshold</span>
-                <strong>{{ product.low_stock_threshold }}</strong>
+
+                <span>
+                    Cost Price
+                </span>
+
+                <strong>
+                    ৳{{ product.cost_price }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Current Stock
+                </span>
+
+                <strong>
+                    {{ product.stock_quantity }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Low Stock Threshold
+                </span>
+
+                <strong>
+                    {{ product.low_stock_threshold }}
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Status
+                </span>
+
+                <strong>
+
+                    {% if product.is_active %}
+                        Active
+                    {% else %}
+                        Archived
+                    {% endif %}
+
+                </strong>
+
             </div>
 
         </div>
@@ -150,13 +247,24 @@ Product details, pricing and inventory summary.
     </section>
 
 
+    <!-- =================================================
+         INVENTORY STATUS
+    ================================================== -->
+
     <section class="panel">
 
         <div class="panel-header">
 
             <div>
-                <h2>Inventory Status</h2>
-                <p>Current stock overview.</p>
+
+                <h2>
+                    Inventory Status
+                </h2>
+
+                <p>
+                    Current stock overview.
+                </p>
+
             </div>
 
         </div>
@@ -167,6 +275,7 @@ Product details, pricing and inventory summary.
             <div class="inventory-number">
                 {{ product.stock_quantity }}
             </div>
+
 
             <div class="inventory-label">
                 Units available
@@ -191,6 +300,22 @@ Product details, pricing and inventory summary.
 
             </div>
 
+
+            <div
+                class="order-summary-note"
+                style="margin-top: 18px;"
+            >
+
+                Low stock alert:
+
+                <strong>
+                    {{ product.low_stock_threshold }}
+                </strong>
+
+                units.
+
+            </div>
+
         </div>
 
     </section>
@@ -198,26 +323,553 @@ Product details, pricing and inventory summary.
 </div>
 
 
-{% if product.description %}
-
 <div style="height: 18px;"></div>
+
+
+<!-- =====================================================
+     STOCK ADJUSTMENT
+====================================================== -->
 
 <section class="panel">
 
     <div class="panel-header">
+
         <div>
-            <h2>Description</h2>
-            <p>Product information.</p>
+
+            <h2>
+                Adjust Stock
+            </h2>
+
+            <p>
+                Increase or decrease inventory with a permanent audit record.
+            </p>
+
         </div>
+
     </div>
 
 
-    <div class="customer-notes">
-        {{ product.description|linebreaksbr }}
+    <form
+        method="post"
+        action="{% url 'products:stock_adjust' product.pk %}"
+    >
+
+        {% csrf_token %}
+
+
+        <div class="form-section">
+
+            <div class="form-grid">
+
+                <!-- =========================================
+                     ADJUSTMENT TYPE
+                ========================================== -->
+
+                <div class="form-group">
+
+                    <label
+                        for="{{ adjustment_form.adjustment_type.id_for_label }}"
+                        class="form-label"
+                    >
+                        Adjustment Type
+
+                        <span class="required">
+                            *
+                        </span>
+
+                    </label>
+
+
+                    {{ adjustment_form.adjustment_type }}
+
+
+                    {% if adjustment_form.adjustment_type.errors %}
+
+                        <div class="form-error">
+                            {{ adjustment_form.adjustment_type.errors|striptags }}
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- =========================================
+                     QUANTITY
+                ========================================== -->
+
+                <div class="form-group">
+
+                    <label
+                        for="{{ adjustment_form.quantity.id_for_label }}"
+                        class="form-label"
+                    >
+                        Quantity
+
+                        <span class="required">
+                            *
+                        </span>
+
+                    </label>
+
+
+                    {{ adjustment_form.quantity }}
+
+
+                    {% if adjustment_form.quantity.errors %}
+
+                        <div class="form-error">
+                            {{ adjustment_form.quantity.errors|striptags }}
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+
+            <!-- =============================================
+                 NOTE
+            ============================================== -->
+
+            <div class="form-group">
+
+                <label
+                    for="{{ adjustment_form.note.id_for_label }}"
+                    class="form-label"
+                >
+                    Note
+                </label>
+
+
+                {{ adjustment_form.note }}
+
+
+                {% if adjustment_form.note.errors %}
+
+                    <div class="form-error">
+                        {{ adjustment_form.note.errors|striptags }}
+                    </div>
+
+                {% endif %}
+
+
+                <div class="form-help">
+
+                    Example:
+                    supplier restock,
+                    damaged during delivery,
+                    lost item,
+                    or physical stock correction.
+
+                </div>
+
+            </div>
+
+
+            <!-- =============================================
+                 CURRENT INVENTORY NOTE
+            ============================================== -->
+
+            <div class="order-summary-note">
+
+                Current stock:
+
+                <strong>
+                    {{ product.stock_quantity }}
+                </strong>
+
+                units.
+
+                Every manual adjustment is recorded with
+                the previous stock, resulting stock,
+                adjustment reason, user and date.
+
+            </div>
+
+        </div>
+
+
+        <div class="form-actions">
+
+            <button
+                type="submit"
+                class="btn btn-primary"
+            >
+                Save Stock Adjustment
+            </button>
+
+        </div>
+
+    </form>
+
+</section>
+
+
+<div style="height: 18px;"></div>
+
+
+<!-- =====================================================
+     STOCK MOVEMENT HISTORY
+====================================================== -->
+
+<section class="panel op-table-panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                Stock Movement History
+            </h2>
+
+            <p>
+                Latest manual and order-driven inventory movements.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="op-table-wrapper">
+
+        <table class="data-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Type
+                    </th>
+
+                    <th>
+                        Order
+                    </th>
+
+                    <th>
+                        Change
+                    </th>
+
+                    <th>
+                        Before
+                    </th>
+
+                    <th>
+                        After
+                    </th>
+
+                    <th>
+                        Note
+                    </th>
+
+                    <th>
+                        Adjusted By
+                    </th>
+
+                    <th>
+                        Date
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+                {% for adjustment in stock_adjustments %}
+
+                    <tr>
+
+                        <!-- =================================
+                             TYPE
+                        ================================== -->
+
+                        <td>
+
+                            {% if adjustment.adjustment_type == "order_deduct" %}
+
+                                {% include "components/badge.html" with text="Order Deduction" type="warning" %}
+
+                            {% elif adjustment.adjustment_type == "order_restore" %}
+
+                                {% include "components/badge.html" with text="Order Restore" type="success" %}
+
+                            {% elif adjustment.adjustment_type == "restock" %}
+
+                                {% include "components/badge.html" with text="Restock" type="success" %}
+
+                            {% elif adjustment.adjustment_type == "return" %}
+
+                                {% include "components/badge.html" with text="Customer Return" type="success" %}
+
+                            {% elif adjustment.adjustment_type == "damaged" %}
+
+                                {% include "components/badge.html" with text="Damaged" type="danger" %}
+
+                            {% elif adjustment.adjustment_type == "lost" %}
+
+                                {% include "components/badge.html" with text="Lost" type="danger" %}
+
+                            {% elif adjustment.adjustment_type == "correction_add" %}
+
+                                {% include "components/badge.html" with text="Correction +" type="success" %}
+
+                            {% elif adjustment.adjustment_type == "correction_remove" %}
+
+                                {% include "components/badge.html" with text="Correction -" type="warning" %}
+
+                            {% elif adjustment.adjustment_type == "opening" %}
+
+                                {% include "components/badge.html" with text="Opening Stock" type="neutral" %}
+
+                            {% else %}
+
+                                {{ adjustment.get_adjustment_type_display }}
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- =================================
+                             ORDER
+                        ================================== -->
+
+                        <td>
+
+                            {% if adjustment.order %}
+
+                                <a
+                                    href="{% url 'orders:detail' adjustment.order.pk %}"
+                                    style="
+                                        font-weight: 600;
+                                        text-decoration: none;
+                                    "
+                                >
+                                    {{ adjustment.order.order_number }}
+                                </a>
+
+                            {% else %}
+
+                                <span style="opacity: .6;">
+                                    —
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- =================================
+                             CHANGE
+                        ================================== -->
+
+                        <td>
+
+                            {% if adjustment.is_increase %}
+
+                                <strong>
+                                    +{{ adjustment.quantity }}
+                                </strong>
+
+                            {% elif adjustment.is_decrease %}
+
+                                <strong>
+                                    -{{ adjustment.quantity }}
+                                </strong>
+
+                            {% else %}
+
+                                {{ adjustment.quantity }}
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- =================================
+                             BEFORE
+                        ================================== -->
+
+                        <td>
+                            {{ adjustment.before_quantity }}
+                        </td>
+
+
+                        <!-- =================================
+                             AFTER
+                        ================================== -->
+
+                        <td>
+
+                            <strong>
+                                {{ adjustment.after_quantity }}
+                            </strong>
+
+                        </td>
+
+
+                        <!-- =================================
+                             NOTE
+                        ================================== -->
+
+                        <td>
+
+                            {{ adjustment.note|default:"—" }}
+
+                        </td>
+
+
+                        <!-- =================================
+                             ADJUSTED BY
+                        ================================== -->
+
+                        <td>
+
+                            {% if adjustment.adjusted_by %}
+
+                                {{ adjustment.adjusted_by }}
+
+                            {% else %}
+
+                                System
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- =================================
+                             DATE
+                        ================================== -->
+
+                        <td>
+
+                            {{ adjustment.created_at|date:"d M Y, h:i A" }}
+
+                        </td>
+
+                    </tr>
+
+
+                {% empty %}
+
+                    <tr>
+
+                        <td
+                            colspan="8"
+                            class="op-table-empty"
+                            style="text-align: center;"
+                        >
+
+                            No stock movement history yet.
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
     </div>
 
 </section>
 
+
+<!-- =====================================================
+     INVENTORY INFORMATION NOTE
+====================================================== -->
+
+<div style="height: 18px;"></div>
+
+
+<section class="panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                Inventory Audit
+            </h2>
+
+            <p>
+                How inventory changes are tracked in OrderPilot.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="form-section">
+
+        <div class="order-summary-note">
+
+            Manual inventory changes should always be made using
+
+            <strong>
+                Adjust Stock
+            </strong>.
+
+            Order confirmation automatically deducts inventory,
+            while cancellation or return can restore committed
+            inventory.
+
+            Every movement is preserved in this history so stock
+            changes can be traced later.
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     DESCRIPTION
+====================================================== -->
+
+{% if product.description %}
+
+    <div style="height: 18px;"></div>
+
+
+    <section class="panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Description
+                </h2>
+
+                <p>
+                    Product information.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="customer-notes">
+
+            {{ product.description|linebreaksbr }}
+
+        </div>
+
+    </section>
+
 {% endif %}
+
 
 {% endblock %}

@@ -26,6 +26,17 @@ Manage customer information and contact details.
 
 <div class="page-toolbar">
 
+
+    <div
+        style="
+            font-size: .9rem;
+            opacity: .7;
+        "
+    >
+        {{ page_obj.paginator.count }}
+        customer{{ page_obj.paginator.count|pluralize }}
+    </div>
+
     <form
         method="get"
         action="{% url 'customers:list' %}"

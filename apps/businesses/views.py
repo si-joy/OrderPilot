@@ -19,30 +19,15 @@ from .forms import (
 )
 from .models import BusinessMember
 from .utils import get_current_business
+from .permissions import (
+    can_manage_business,
+    get_current_membership,
+)
 
 
 # =========================================================
 # HELPERS
 # =========================================================
-
-def get_current_membership(
-    user,
-    business,
-):
-    return (
-        BusinessMember.objects
-        .select_related(
-            "user",
-            "business",
-        )
-        .filter(
-            business=business,
-            user=user,
-            is_active=True,
-        )
-        .first()
-    )
-
 
 def can_manage_team(
     membership,

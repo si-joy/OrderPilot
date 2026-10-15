@@ -22,19 +22,26 @@ from .models import Customer
 
 @login_required
 def customer_list(request):
+
     business = get_current_business(
         request.user
     )
 
     query = (
         request.GET
-        .get("q", "")
+        .get(
+            "q",
+            "",
+        )
         .strip()
     )
 
     status = (
         request.GET
-        .get("status", "active")
+        .get(
+            "status",
+            "active",
+        )
         .strip()
     )
 
@@ -51,16 +58,19 @@ def customer_list(request):
 
     if status == "active":
 
-        customers = customers.filter(
-            is_active=True
+        customers = (
+            customers.filter(
+                is_active=True
+            )
         )
 
     elif status == "inactive":
 
-        customers = customers.filter(
-            is_active=False
+        customers = (
+            customers.filter(
+                is_active=False
+            )
         )
-
 
     # -----------------------------------------------------
     # SEARCH
@@ -68,29 +78,30 @@ def customer_list(request):
 
     if query:
 
-        customers = customers.filter(
+        customers = (
+            customers.filter(
 
-            Q(
-                full_name__icontains=query
-            )
+                Q(
+                    full_name__icontains=query
+                )
 
-            | Q(
-                phone__icontains=query
-            )
+                | Q(
+                    phone__icontains=query
+                )
 
-            | Q(
-                email__icontains=query
-            )
+                | Q(
+                    email__icontains=query
+                )
 
-            | Q(
-                city__icontains=query
-            )
+                | Q(
+                    city__icontains=query
+                )
 
-            | Q(
-                district__icontains=query
+                | Q(
+                    district__icontains=query
+                )
             )
         )
-
 
     # -----------------------------------------------------
     # PAGINATION
@@ -102,40 +113,77 @@ def customer_list(request):
     )
 
     page_number = (
-        request.GET
-        .get("page")
+        request.GET.get(
+            "page"
+        )
     )
 
     page_obj = (
-        paginator
-        .get_page(page_number)
+        paginator.get_page(
+            page_number
+        )
     )
 
+    # -----------------------------------------------------
+    # PRESERVE SEARCH / FILTER QUERY
+    # -----------------------------------------------------
+
+    query_params = (
+        request.GET.copy()
+    )
+
+    query_params.pop(
+        "page",
+        None,
+    )
+
+    filter_query = (
+        query_params.urlencode()
+    )
+
+    # -----------------------------------------------------
+    # CONTEXT
+    # -----------------------------------------------------
 
     context = {
-        "page_obj": page_obj,
-        "customers": page_obj.object_list,
-        "query": query,
-        "status": status,
-        "business": business,
-    }
+        "page_obj":
+            page_obj,
 
+        "customers":
+            page_obj.object_list,
+
+        "query":
+            query,
+
+        "status":
+            status,
+
+        "filter_query":
+            filter_query,
+
+        "business":
+            business,
+    }
 
     # -----------------------------------------------------
     # HTMX PARTIAL RESPONSE
     # -----------------------------------------------------
 
     if (
-        request.headers.get("HX-Request")
+        request.headers.get(
+            "HX-Request"
+        )
         == "true"
     ):
 
         return render(
             request,
-            "customers/partials/customer_table.html",
+            (
+                "customers/partials/"
+                "customer_table.html"
+            ),
             context,
         )
-
 
     return render(
         request,
@@ -147,9 +195,12 @@ def customer_list(request):
 # =========================================================
 # CUSTOMER DETAIL
 # =========================================================
-
 @login_required
-def customer_detail(request, pk):
+def customer_detail(
+    request,
+    pk,
+):
+
     business = get_current_business(
         request.user
     )
@@ -160,10 +211,9 @@ def customer_detail(request, pk):
         business=business,
     )
 
-
-    # -----------------------------------------------------
+    # =====================================================
     # CUSTOMER ORDERS
-    # -----------------------------------------------------
+    # =====================================================
 
     orders = (
         Order.objects
@@ -177,91 +227,203 @@ def customer_detail(request, pk):
         .prefetch_related(
             "items",
             "payments",
+            "refunds",
         )
         .order_by(
-            "-created_at"
+            "-created_at",
+            "-id",
         )
     )
 
-
-    # -----------------------------------------------------
-    # TOTAL ORDERS
-    # -----------------------------------------------------
-
-    total_orders = (
-        orders.count()
-    )
-
-
-    # -----------------------------------------------------
-    # TOTAL SPENT
-    #
-    # Only delivered orders are treated as completed sales.
-    # -----------------------------------------------------
-
-    delivered_orders = (
-        orders.filter(
-            status=Order.STATUS_DELIVERED
-        )
-    )
-
-    total_spent = (
-        delivered_orders
-        .aggregate(
-            total=Sum(
-                "total_amount"
-            )
-        )
-        .get("total")
-        or 0
-    )
-
-
-    # -----------------------------------------------------
-    # TOTAL PAID
-    #
-    # Includes payments against all orders.
-    # -----------------------------------------------------
-
-    total_paid = (
+    order_list = list(
         orders
-        .aggregate(
-            total=Sum(
-                "paid_amount"
-            )
-        )
-        .get("total")
-        or 0
     )
 
+    # =====================================================
+    # TOTAL ORDERS
+    # =====================================================
 
-    # -----------------------------------------------------
-    # TOTAL DUE
+    total_orders = len(
+        order_list
+    )
+
+    # =====================================================
+    # DELIVERED ORDERS
+    # =====================================================
+
+    delivered_orders = [
+        order
+        for order in order_list
+        if (
+            order.status
+            == Order.STATUS_DELIVERED
+        )
+    ]
+
+    delivered_orders_count = len(
+        delivered_orders
+    )
+
+    # =====================================================
+    # DELIVERED SALES
     #
-    # Uses the order due_amount property.
-    # -----------------------------------------------------
+    # Refund-aware completed sales.
+    # =====================================================
 
-    total_due = sum(
+    delivered_sales = sum(
         (
-            order.due_amount
-            for order in orders
+            max(
+                (
+                    order.total_amount
+                    - order.refunded_amount
+                ),
+                0,
+            )
+            for order in delivered_orders
         ),
         0,
     )
 
+    # Backwards-compatible context name.
+    total_spent = delivered_sales
+
+    # =====================================================
+    # GROSS PAID
+    # =====================================================
+
+    gross_paid = sum(
+        (
+            order.paid_amount
+            for order in order_list
+        ),
+        0,
+    )
+
+    # =====================================================
+    # TOTAL REFUNDED
+    # =====================================================
+
+    total_refunded = sum(
+        (
+            order.refunded_amount
+            for order in order_list
+        ),
+        0,
+    )
+
+    # =====================================================
+    # NET PAID
+    # =====================================================
+
+    net_paid = sum(
+        (
+            order.net_paid_amount
+            for order in order_list
+        ),
+        0,
+    )
+
+    # Backwards-compatible context name.
+    total_paid = net_paid
+
+    # =====================================================
+    # OUTSTANDING DUE
+    #
+    # Cancelled and returned orders are excluded because
+    # they are no longer collectible active receivables.
+    # =====================================================
+
+    active_receivable_orders = [
+        order
+        for order in order_list
+        if order.status not in {
+            Order.STATUS_CANCELLED,
+            Order.STATUS_RETURNED,
+        }
+    ]
+
+    total_due = sum(
+        (
+            order.due_amount
+            for order
+            in active_receivable_orders
+        ),
+        0,
+    )
+
+    # =====================================================
+    # CUSTOMER INSIGHTS
+    # =====================================================
+
+    last_order = (
+        order_list[0]
+        if order_list
+        else None
+    )
+
+    average_delivered_order_value = 0
+
+    if delivered_orders_count:
+
+        average_delivered_order_value = (
+            delivered_sales
+            / delivered_orders_count
+        )
+
+    is_repeat_customer = (
+        total_orders > 1
+    )
+
+    # =====================================================
+    # CONTEXT
+    # =====================================================
 
     context = {
-        "customer": customer,
-        "business": business,
+        "customer":
+            customer,
 
-        "orders": orders,
+        "business":
+            business,
 
-        "total_orders": total_orders,
-        "total_spent": total_spent,
-        "total_paid": total_paid,
-        "total_due": total_due,
+        "orders":
+            order_list,
+
+        "total_orders":
+            total_orders,
+
+        "delivered_orders_count":
+            delivered_orders_count,
+
+        "delivered_sales":
+            delivered_sales,
+
+        "total_spent":
+            total_spent,
+
+        "gross_paid":
+            gross_paid,
+
+        "total_refunded":
+            total_refunded,
+
+        "net_paid":
+            net_paid,
+
+        "total_paid":
+            total_paid,
+
+        "total_due":
+            total_due,
+
+        "last_order":
+            last_order,
+
+        "average_delivered_order_value":
+            average_delivered_order_value,
+
+        "is_repeat_customer":
+            is_repeat_customer,
     }
-
 
     return render(
         request,
@@ -275,7 +437,10 @@ def customer_detail(request, pk):
 # =========================================================
 
 @login_required
-def customer_create(request):
+def customer_create(
+    request,
+):
+
     business = get_current_business(
         request.user
     )
@@ -288,14 +453,17 @@ def customer_create(request):
 
         if form.is_valid():
 
-            customer = form.save(
-                commit=False
+            customer = (
+                form.save(
+                    commit=False
+                )
             )
 
-            customer.business = business
+            customer.business = (
+                business
+            )
 
             customer.save()
-
 
             messages.success(
                 request,
@@ -305,30 +473,30 @@ def customer_create(request):
                 ),
             )
 
-
             return redirect(
                 "customers:detail",
                 pk=customer.pk,
             )
 
-
     else:
 
         form = CustomerForm()
-
 
     return render(
         request,
         "customers/customer_form.html",
         {
-            "form": form,
-            "business": business,
+            "form":
+                form,
+
+            "business":
+                business,
 
             "page_title":
-            "Add Customer",
+                "Add Customer",
 
             "submit_label":
-            "Create Customer",
+                "Create Customer",
         },
     )
 
@@ -338,7 +506,11 @@ def customer_create(request):
 # =========================================================
 
 @login_required
-def customer_update(request, pk):
+def customer_update(
+    request,
+    pk,
+):
+
     business = get_current_business(
         request.user
     )
@@ -348,7 +520,6 @@ def customer_update(request, pk):
         pk=pk,
         business=business,
     )
-
 
     if request.method == "POST":
 
@@ -359,14 +530,17 @@ def customer_update(request, pk):
 
         if form.is_valid():
 
-            customer = form.save(
-                commit=False
+            customer = (
+                form.save(
+                    commit=False
+                )
             )
 
-            customer.business = business
+            customer.business = (
+                business
+            )
 
             customer.save()
-
 
             messages.success(
                 request,
@@ -376,12 +550,10 @@ def customer_update(request, pk):
                 ),
             )
 
-
             return redirect(
                 "customers:detail",
                 pk=customer.pk,
             )
-
 
     else:
 
@@ -389,20 +561,24 @@ def customer_update(request, pk):
             instance=customer
         )
 
-
     return render(
         request,
         "customers/customer_form.html",
         {
-            "form": form,
-            "customer": customer,
-            "business": business,
+            "form":
+                form,
+
+            "customer":
+                customer,
+
+            "business":
+                business,
 
             "page_title":
-            "Edit Customer",
+                "Edit Customer",
 
             "submit_label":
-            "Save Changes",
+                "Save Changes",
         },
     )
 
@@ -413,7 +589,11 @@ def customer_update(request, pk):
 
 @login_required
 @require_POST
-def customer_archive(request, pk):
+def customer_archive(
+    request,
+    pk,
+):
+
     business = get_current_business(
         request.user
     )
@@ -424,7 +604,6 @@ def customer_archive(request, pk):
         business=business,
     )
 
-
     customer.is_active = False
 
     customer.save(
@@ -434,7 +613,6 @@ def customer_archive(request, pk):
         ]
     )
 
-
     messages.success(
         request,
         (
@@ -442,7 +620,6 @@ def customer_archive(request, pk):
             "was archived."
         ),
     )
-
 
     return redirect(
         "customers:detail",
@@ -456,7 +633,11 @@ def customer_archive(request, pk):
 
 @login_required
 @require_POST
-def customer_restore(request, pk):
+def customer_restore(
+    request,
+    pk,
+):
+
     business = get_current_business(
         request.user
     )
@@ -467,7 +648,6 @@ def customer_restore(request, pk):
         business=business,
     )
 
-
     customer.is_active = True
 
     customer.save(
@@ -477,7 +657,6 @@ def customer_restore(request, pk):
         ]
     )
 
-
     messages.success(
         request,
         (
@@ -485,7 +664,6 @@ def customer_restore(request, pk):
             "was restored."
         ),
     )
-
 
     return redirect(
         "customers:detail",

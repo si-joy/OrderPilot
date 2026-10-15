@@ -5,15 +5,37 @@
     <table class="data-table">
 
         <thead>
+
             <tr>
-                <th>Product</th>
-                <th>SKU</th>
-                <th>Selling Price</th>
-                <th>Cost Price</th>
-                <th>Stock</th>
-                <th>Status</th>
+
+                <th>
+                    Product
+                </th>
+
+                <th>
+                    SKU
+                </th>
+
+                <th>
+                    Selling Price
+                </th>
+
+                <th>
+                    Cost Price
+                </th>
+
+                <th>
+                    Stock
+                </th>
+
+                <th>
+                    Status
+                </th>
+
                 <th></th>
+
             </tr>
+
         </thead>
 
 
@@ -41,7 +63,11 @@
 
 
                     <td>
-                        ৳{{ product.selling_price }}
+
+                        <strong>
+                            ৳{{ product.selling_price }}
+                        </strong>
+
                     </td>
 
 
@@ -66,6 +92,10 @@
                             {% elif product.is_low_stock %}
 
                                 {% include "components/badge.html" with text="Low stock" type="warning" %}
+
+                            {% else %}
+
+                                {% include "components/badge.html" with text="Healthy" type="success" %}
 
                             {% endif %}
 
@@ -113,47 +143,93 @@
 
 {% if page_obj.paginator.num_pages > 1 %}
 
-<div class="pagination">
+<div
+    class="page-toolbar"
+    style="margin-top: 18px;"
+>
 
-    <div class="pagination-info">
-        Page {{ page_obj.number }}
-        of {{ page_obj.paginator.num_pages }}
+    <div>
+
+        <span
+            style="
+                font-size: .9rem;
+                opacity: .7;
+            "
+        >
+            Page
+            {{ page_obj.number }}
+            of
+            {{ page_obj.paginator.num_pages }}
+        </span>
+
     </div>
 
 
-    <div class="pagination-actions">
+    <div class="detail-actions">
 
-        {% if page_obj.has_previous %}
+        {% if page_obj.number > 2 %}
 
             <a
-                href="?q={{ query|urlencode }}&status={{ status }}&stock={{ stock }}&page={{ page_obj.previous_page_number }}"
-
-                hx-get="?q={{ query|urlencode }}&status={{ status }}&stock={{ stock }}&page={{ page_obj.previous_page_number }}"
-
+                href="?{% if filter_query %}{{ filter_query }}&{% endif %}page=1"
+                hx-get="?{% if filter_query %}{{ filter_query }}&{% endif %}page=1"
                 hx-target="#productTableArea"
                 hx-push-url="true"
-
                 class="btn btn-secondary btn-small"
             >
-                Previous
+                First
             </a>
 
         {% endif %}
 
 
+        {% if page_obj.has_previous %}
+
+            <a
+                href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.previous_page_number }}"
+                hx-get="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.previous_page_number }}"
+                hx-target="#productTableArea"
+                hx-push-url="true"
+                class="btn btn-secondary btn-small"
+            >
+                ← Previous
+            </a>
+
+        {% endif %}
+
+
+        <span
+            class="btn btn-primary btn-small"
+            style="pointer-events: none;"
+        >
+            {{ page_obj.number }}
+        </span>
+
+
         {% if page_obj.has_next %}
 
             <a
-                href="?q={{ query|urlencode }}&status={{ status }}&stock={{ stock }}&page={{ page_obj.next_page_number }}"
-
-                hx-get="?q={{ query|urlencode }}&status={{ status }}&stock={{ stock }}&page={{ page_obj.next_page_number }}"
-
+                href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.next_page_number }}"
+                hx-get="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.next_page_number }}"
                 hx-target="#productTableArea"
                 hx-push-url="true"
-
                 class="btn btn-secondary btn-small"
             >
-                Next
+                Next →
+            </a>
+
+        {% endif %}
+
+
+        {% if page_obj.number < page_obj.paginator.num_pages|add:"-1" %}
+
+            <a
+                href="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.paginator.num_pages }}"
+                hx-get="?{% if filter_query %}{{ filter_query }}&{% endif %}page={{ page_obj.paginator.num_pages }}"
+                hx-target="#productTableArea"
+                hx-push-url="true"
+                class="btn btn-secondary btn-small"
+            >
+                Last
             </a>
 
         {% endif %}
@@ -175,18 +251,42 @@
             □
         </div>
 
-        <h3>No products found</h3>
 
-        <p>
-            No products match your current search or filter.
-        </p>
+        {% if query or status != "active" or stock != "all" %}
 
-        <a
-            href="{% url 'products:create' %}"
-            class="btn btn-primary"
-        >
-            Add Product
-        </a>
+            <h3>
+                No matching products
+            </h3>
+
+            <p>
+                No products matched your current search or filters.
+            </p>
+
+            <a
+                href="{% url 'products:list' %}"
+                class="btn btn-secondary"
+            >
+                Clear Filters
+            </a>
+
+        {% else %}
+
+            <h3>
+                No products yet
+            </h3>
+
+            <p>
+                Add your first product to start managing inventory.
+            </p>
+
+            <a
+                href="{% url 'products:create' %}"
+                class="btn btn-primary"
+            >
+                Add Product
+            </a>
+
+        {% endif %}
 
     </div>
 

@@ -24,7 +24,10 @@ from django.views.decorators.http import require_POST
 
 from apps.businesses.utils import get_current_business
 
-from apps.products.models import Product
+from apps.products.models import (
+    Product,
+    StockAdjustment,
+)
 from apps.notifications.models import Notification
 from apps.notifications.services import create_notification
 
@@ -43,18 +46,17 @@ from .forms import (
 )
 
 from .models import (
-
     CourierSettlement,
-
     Order,
-
+    OrderItem,
     OrderPayment,
-
     OrderRefund,
-
     OrderStatusHistory,
-
 )
+
+from django.core.paginator import Paginator
+from django.db.models import Q
+
 
 from django.http import HttpResponse
 
@@ -267,17 +269,24 @@ def calculate_payment_status(order):
 def get_order_product_quantities(order):
 
     quantities = defaultdict(
-
         int
-
     )
 
-    for item in order.items.all():
+    items = (
+        OrderItem.objects
+        .filter(
+            order=order
+        )
+        .only(
+            "product_id",
+            "quantity",
+        )
+    )
+
+    for item in items:
 
         quantities[
-
             item.product_id
-
         ] += item.quantity
 
     return quantities
@@ -288,159 +297,143 @@ def get_order_product_quantities(order):
 
 # =========================================================
 
-def deduct_order_stock(order):
+def deduct_order_stock(
+    order,
+    adjusted_by=None,
+):
 
     if order.stock_deducted:
-
         return
 
     quantities = (
-
         get_order_product_quantities(
-
             order
-
         )
-
     )
 
     if not quantities:
 
         raise InsufficientStockError(
-
             "This order does not contain any products."
-
         )
 
     product_ids = list(
-
         quantities.keys()
-
     )
 
     products = (
-
         Product.objects
-
         .select_for_update()
-
         .filter(
-
             business=order.business,
-
             id__in=product_ids,
-
         )
-
     )
 
     product_map = {
-
         product.id: product
-
         for product in products
-
     }
 
-    # Validate first
+    # =====================================================
+    # VALIDATE ALL PRODUCTS FIRST
+    # =====================================================
 
     for product_id, required in (
-
         quantities.items()
-
     ):
 
         product = product_map.get(
-
             product_id
-
         )
 
         if product is None:
 
             raise InsufficientStockError(
-
                 (
-
                     "One or more products are "
-
                     "no longer available."
-
                 )
-
             )
 
         if (
-
             product.stock_quantity
-
             < required
-
         ):
 
             raise InsufficientStockError(
-
                 (
-
                     f"Not enough stock for "
-
                     f"{product.name}. "
-
                     f"Available: "
-
                     f"{product.stock_quantity}, "
-
                     f"required: {required}."
-
                 )
-
             )
 
-    # Deduct
+    # =====================================================
+    # DEDUCT + AUDIT
+    # =====================================================
 
     for product_id, required in (
-
         quantities.items()
-
     ):
 
         product = product_map[
-
             product_id
-
         ]
 
-        product.stock_quantity -= (
+        before_quantity = (
+            product.stock_quantity
+        )
 
-            required
+        after_quantity = (
+            before_quantity
+            - required
+        )
 
+        product.stock_quantity = (
+            after_quantity
         )
 
         product.save(
-
             update_fields=[
-
                 "stock_quantity",
-
                 "updated_at",
-
             ]
+        )
 
+        StockAdjustment.objects.create(
+            business=order.business,
+            product=product,
+            order=order,
+            adjustment_type=(
+                StockAdjustment
+                .TYPE_ORDER_DEDUCT
+            ),
+            quantity=required,
+            before_quantity=(
+                before_quantity
+            ),
+            after_quantity=(
+                after_quantity
+            ),
+            note=(
+                f"Stock deducted for "
+                f"{order.order_number}."
+            ),
+            adjusted_by=adjusted_by,
         )
 
     order.stock_deducted = True
 
     order.save(
-
         update_fields=[
-
             "stock_deducted",
-
             "updated_at",
-
         ]
-
     )
+
 
 # =========================================================
 
@@ -448,94 +441,102 @@ def deduct_order_stock(order):
 
 # =========================================================
 
-def restore_order_stock(order):
+def restore_order_stock(
+    order,
+    adjusted_by=None,
+):
 
     if not order.stock_deducted:
-
         return
 
     quantities = (
-
         get_order_product_quantities(
-
             order
-
         )
-
     )
 
     product_ids = list(
-
         quantities.keys()
-
     )
 
     products = (
-
         Product.objects
-
         .select_for_update()
-
         .filter(
-
             business=order.business,
-
             id__in=product_ids,
-
         )
-
     )
 
     product_map = {
-
         product.id: product
-
         for product in products
-
     }
 
+    # =====================================================
+    # RESTORE + AUDIT
+    # =====================================================
+
     for product_id, quantity in (
-
         quantities.items()
-
     ):
 
         product = product_map.get(
-
             product_id
-
         )
 
         if product is None:
-
             continue
 
-        product.stock_quantity += quantity
+        before_quantity = (
+            product.stock_quantity
+        )
+
+        after_quantity = (
+            before_quantity
+            + quantity
+        )
+
+        product.stock_quantity = (
+            after_quantity
+        )
 
         product.save(
-
             update_fields=[
-
                 "stock_quantity",
-
                 "updated_at",
-
             ]
+        )
 
+        StockAdjustment.objects.create(
+            business=order.business,
+            product=product,
+            order=order,
+            adjustment_type=(
+                StockAdjustment
+                .TYPE_ORDER_RESTORE
+            ),
+            quantity=quantity,
+            before_quantity=(
+                before_quantity
+            ),
+            after_quantity=(
+                after_quantity
+            ),
+            note=(
+                f"Stock restored for "
+                f"{order.order_number}."
+            ),
+            adjusted_by=adjusted_by,
         )
 
     order.stock_deducted = False
 
     order.save(
-
         update_fields=[
-
             "stock_deducted",
-
             "updated_at",
-
         ]
-
     )
 
 # =========================================================
@@ -544,42 +545,34 @@ def restore_order_stock(order):
 
 # =========================================================
 
-def sync_order_inventory(order):
+def sync_order_inventory(
+    order,
+    adjusted_by=None,
+):
 
     should_be_deducted = (
-
         order.status
-
         in INVENTORY_COMMITTED_STATUSES
-
     )
 
     if (
-
         should_be_deducted
-
         and not order.stock_deducted
-
     ):
 
         deduct_order_stock(
-
-            order
-
+            order,
+            adjusted_by=adjusted_by,
         )
 
     elif (
-
         not should_be_deducted
-
         and order.stock_deducted
-
     ):
 
         restore_order_stock(
-
-            order
-
+            order,
+            adjusted_by=adjusted_by,
         )
 
 # =========================================================
@@ -589,53 +582,244 @@ def sync_order_inventory(order):
 # =========================================================
 
 @login_required
-
 def order_list(request):
 
     business = get_current_business(
-
         request.user
-
     )
+
+    # =====================================================
+    # FILTER VALUES
+    # =====================================================
+
+    query = (
+        request.GET
+        .get(
+            "q",
+            "",
+        )
+        .strip()
+    )
+
+    status = (
+        request.GET
+        .get(
+            "status",
+            "",
+        )
+        .strip()
+    )
+
+    payment_status = (
+        request.GET
+        .get(
+            "payment_status",
+            "",
+        )
+        .strip()
+    )
+
+    date_from = (
+        request.GET
+        .get(
+            "date_from",
+            "",
+        )
+        .strip()
+    )
+
+    date_to = (
+        request.GET
+        .get(
+            "date_to",
+            "",
+        )
+        .strip()
+    )
+
+    # =====================================================
+    # BASE QUERYSET
+    # =====================================================
 
     orders = (
-
         Order.objects
-
         .filter(
-
             business=business,
-
         )
-
         .select_related(
-
             "customer",
-
         )
-
         .prefetch_related(
-
             "items",
-
         )
-
+        .order_by(
+            "-created_at",
+            "-id",
+        )
     )
 
+    # =====================================================
+    # SEARCH
+    # =====================================================
+
+    if query:
+
+        orders = orders.filter(
+
+            Q(
+                order_number__icontains=query
+            )
+
+            | Q(
+                customer__full_name__icontains=query
+            )
+
+            | Q(
+                customer__phone__icontains=query
+            )
+
+            | Q(
+                tracking_number__icontains=query
+            )
+
+            | Q(
+                courier_name__icontains=query
+            )
+
+        )
+
+    # =====================================================
+    # ORDER STATUS
+    # =====================================================
+
+    valid_statuses = {
+        value
+        for value, label
+        in Order.STATUS_CHOICES
+    }
+
+    if (
+        status
+        and status in valid_statuses
+    ):
+
+        orders = orders.filter(
+            status=status
+        )
+
+    # =====================================================
+    # PAYMENT STATUS
+    # =====================================================
+
+    valid_payment_statuses = {
+        value
+        for value, label
+        in Order.PAYMENT_STATUS_CHOICES
+    }
+
+    if (
+        payment_status
+        and payment_status
+        in valid_payment_statuses
+    ):
+
+        orders = orders.filter(
+            payment_status=payment_status
+        )
+
+    # =====================================================
+    # DATE RANGE
+    # =====================================================
+
+    if date_from:
+
+        orders = orders.filter(
+            created_at__date__gte=date_from
+        )
+
+    if date_to:
+
+        orders = orders.filter(
+            created_at__date__lte=date_to
+        )
+
+    # =====================================================
+    # PAGINATION
+    # =====================================================
+
+    paginator = Paginator(
+        orders,
+        15,
+    )
+
+    page_number = (
+        request.GET.get(
+            "page"
+        )
+    )
+
+    page_obj = (
+        paginator.get_page(
+            page_number
+        )
+    )
+
+    # =====================================================
+    # PRESERVE FILTER QUERY STRING
+    # =====================================================
+
+    query_params = (
+        request.GET.copy()
+    )
+
+    query_params.pop(
+        "page",
+        None,
+    )
+
+    filter_query = (
+        query_params.urlencode()
+    )
+
+    context = {
+        "orders":
+            page_obj.object_list,
+
+        "page_obj":
+            page_obj,
+
+        "query":
+            query,
+
+        "status":
+            status,
+
+        "payment_status":
+            payment_status,
+
+        "date_from":
+            date_from,
+
+        "date_to":
+            date_to,
+
+        "status_choices":
+            Order.STATUS_CHOICES,
+
+        "payment_status_choices":
+            Order.PAYMENT_STATUS_CHOICES,
+
+        "filter_query":
+            filter_query,
+
+        "business":
+            business,
+    }
+
     return render(
-
         request,
-
         "orders/order_list.html",
-
-        {
-
-            "orders": orders,
-
-            "business": business,
-
-        },
-
+        context,
     )
 
 # =========================================================
@@ -1066,9 +1250,8 @@ def order_create(request):
                         item.save()
 
                     sync_order_inventory(
-
-                        order
-
+                        order,
+                        adjusted_by=request.user,
                     )
 
                     # Initial payment history
@@ -1220,6 +1403,595 @@ def order_create(request):
         },
 
     )
+
+
+# =========================================================
+# EDIT ORDER
+# =========================================================
+
+@login_required
+def order_edit(
+    request,
+    pk,
+):
+
+    business = get_current_business(
+        request.user
+    )
+
+    # =====================================================
+    # LOAD ORDER
+    # =====================================================
+
+    order = get_object_or_404(
+        Order.objects
+        .select_related(
+            "customer",
+        )
+        .prefetch_related(
+            "items",
+        ),
+        pk=pk,
+        business=business,
+    )
+
+    # =====================================================
+    # EDIT RULES
+    # =====================================================
+
+    editable_order_statuses = {
+        Order.STATUS_PENDING,
+        Order.STATUS_CONFIRMED,
+        Order.STATUS_PROCESSING,
+    }
+
+    financial_editable = (
+        order.status
+        in editable_order_statuses
+    )
+
+    can_edit_items = (
+        order.status
+        in editable_order_statuses
+    )
+
+    form = None
+    formset = None
+
+    # =====================================================
+    # POST
+    # =====================================================
+
+    if request.method == "POST":
+
+        try:
+
+            with transaction.atomic():
+
+                # -------------------------------------------------
+                # Lock order against concurrent edits / payments /
+                # refunds / status transitions.
+                # -------------------------------------------------
+
+                order = get_object_or_404(
+                    Order.objects
+                    .select_for_update()
+                    .select_related(
+                        "customer",
+                    )
+                    .prefetch_related(
+                        "items",
+                    ),
+                    pk=pk,
+                    business=business,
+                )
+
+                financial_editable = (
+                    order.status
+                    in editable_order_statuses
+                )
+
+                can_edit_items = (
+                    order.status
+                    in editable_order_statuses
+                )
+
+                form = OrderForm(
+                    request.POST,
+                    instance=order,
+                    business=business,
+                    edit_mode=True,
+                    financial_editable=(
+                        financial_editable
+                    ),
+                )
+
+                if can_edit_items:
+
+                    formset = OrderItemFormSet(
+                        request.POST,
+                        instance=order,
+                        form_kwargs={
+                            "business":
+                                business,
+                        },
+                    )
+
+                form_valid = (
+                    form.is_valid()
+                )
+
+                formset_valid = True
+
+                if can_edit_items:
+
+                    formset_valid = (
+                        formset.is_valid()
+                    )
+
+                if (
+                    form_valid
+                    and formset_valid
+                ):
+
+                    # =================================================
+                    # SAFE OPERATIONAL FIELDS
+                    # =================================================
+
+                    order.courier_name = (
+                        form.cleaned_data[
+                            "courier_name"
+                        ]
+                    )
+
+                    order.tracking_number = (
+                        form.cleaned_data[
+                            "tracking_number"
+                        ]
+                    )
+
+                    order.delivery_address = (
+                        form.cleaned_data[
+                            "delivery_address"
+                        ]
+                    )
+
+                    order.notes = (
+                        form.cleaned_data[
+                            "notes"
+                        ]
+                    )
+
+                    # =================================================
+                    # FINANCIAL + PRODUCT CORRECTIONS
+                    # =================================================
+
+                    if financial_editable:
+
+                        order.customer = (
+                            form.cleaned_data[
+                                "customer"
+                            ]
+                        )
+
+                        order.payment_method = (
+                            form.cleaned_data[
+                                "payment_method"
+                            ]
+                        )
+
+                        order.discount = (
+                            form.cleaned_data[
+                                "discount"
+                            ]
+                            or Decimal(
+                                "0.00"
+                            )
+                        )
+
+                        order.delivery_charge = (
+                            form.cleaned_data[
+                                "delivery_charge"
+                            ]
+                            or Decimal(
+                                "0.00"
+                            )
+                        )
+
+                        # ---------------------------------------------
+                        # Keep original item snapshots so quantity-only
+                        # changes do not silently adopt today's product
+                        # price/cost.
+                        # ---------------------------------------------
+
+                        existing_items = {
+                            item.pk: item
+                            for item
+                            in order.items.all()
+                        }
+
+                        # ---------------------------------------------
+                        # If stock was already committed, restore the
+                        # OLD quantities before changing items.
+                        # Everything is inside one transaction, so any
+                        # later failure rolls this restoration back.
+                        # ---------------------------------------------
+
+                        if order.stock_deducted:
+
+                            restore_order_stock(
+                                order,
+                                adjusted_by=request.user,
+                            )
+
+                        # ---------------------------------------------
+                        # Save changed / new / deleted items.
+                        # ---------------------------------------------
+
+                        changed_items = (
+                            formset.save(
+                                commit=False
+                            )
+                        )
+
+                        for deleted_item in (
+                            formset.deleted_objects
+                        ):
+
+                            deleted_item.delete()
+
+                        for item in changed_items:
+
+                            product = (
+                                item.product
+                            )
+
+                            if (
+                                product.business_id
+                                != business.id
+                            ):
+
+                                raise ValueError(
+                                    (
+                                        "Invalid product "
+                                        "selected."
+                                    )
+                                )
+
+                            old_item = (
+                                existing_items.get(
+                                    item.pk
+                                )
+                            )
+
+                            # New item or changed product:
+                            # take a fresh snapshot.
+                            if (
+                                old_item is None
+                                or old_item.product_id
+                                != product.id
+                            ):
+
+                                item.product_name = (
+                                    product.name
+                                )
+
+                                item.sku = (
+                                    product.sku
+                                )
+
+                                item.unit_price = (
+                                    product.selling_price
+                                )
+
+                                item.unit_cost = (
+                                    product.cost_price
+                                )
+
+                            # Existing same product:
+                            # quantity may change, but historical
+                            # price/cost snapshot stays untouched.
+
+                            item.order = order
+
+                            item.save()
+
+                        # ---------------------------------------------
+                        # Recalculate using the final item set.
+                        # ---------------------------------------------
+
+                        final_items = list(
+                            OrderItem.objects.filter(
+                                order=order
+                            ).select_related(
+                                "product"
+                            )
+                        )
+
+                        if not final_items:
+
+                            raise ValueError(
+                                (
+                                    "Please add at least "
+                                    "one valid product."
+                                )
+                            )
+
+                        subtotal = sum(
+                            (
+                                item.unit_price
+                                * item.quantity
+                                for item
+                                in final_items
+                            ),
+                            Decimal(
+                                "0.00"
+                            ),
+                        )
+
+                        total = (
+                            subtotal
+                            - order.discount
+                            + order.delivery_charge
+                        )
+
+                        if (
+                            total
+                            < Decimal("0.00")
+                        ):
+
+                            total = Decimal(
+                                "0.00"
+                            )
+
+                        # ---------------------------------------------
+                        # Financial history protection.
+                        #
+                        # Existing net collected money or refund history
+                        # must never become impossible because an order
+                        # total was edited downward.
+                        # ---------------------------------------------
+
+                        if (
+                            total
+                            < order.net_paid_amount
+                        ):
+
+                            raise ValueError(
+                                (
+                                    "Order total cannot be "
+                                    "lower than the current "
+                                    "net paid amount of "
+                                    f"৳{order.net_paid_amount}."
+                                )
+                            )
+
+                        if (
+                            total
+                            < order.refunded_amount
+                        ):
+
+                            raise ValueError(
+                                (
+                                    "Order total cannot be "
+                                    "lower than the already "
+                                    "refunded amount of "
+                                    f"৳{order.refunded_amount}."
+                                )
+                            )
+
+                        order.subtotal = (
+                            subtotal
+                        )
+
+                        order.total_amount = (
+                            total
+                        )
+
+                        order.payment_status = (
+                            calculate_payment_status(
+                                order
+                            )
+                        )
+
+                    # =================================================
+                    # SAVE ORDER
+                    # =================================================
+
+                    update_fields = [
+                        "courier_name",
+                        "tracking_number",
+                        "delivery_address",
+                        "notes",
+                        "updated_at",
+                    ]
+
+                    if financial_editable:
+
+                        update_fields.extend(
+                            [
+                                "customer",
+                                "payment_method",
+                                "discount",
+                                "delivery_charge",
+                                "subtotal",
+                                "total_amount",
+                                "payment_status",
+                            ]
+                        )
+
+                    order.save(
+                        update_fields=(
+                            update_fields
+                        )
+                    )
+
+                    # =================================================
+                    # RE-COMMIT INVENTORY
+                    # =================================================
+
+                    if can_edit_items:
+
+                        # Clear stale prefetched order items after
+                        # formset updates/deletes so inventory sync
+                        # always reads the latest database state.
+                        if hasattr(
+                            order,
+                            "_prefetched_objects_cache",
+                        ):
+                            order._prefetched_objects_cache.pop(
+                                "items",
+                                None,
+                            )
+
+                        sync_order_inventory(
+                            order,
+                            adjusted_by=request.user,
+                        )
+
+                else:
+
+                    # Normal form validation errors.
+                    # No DB mutation has happened.
+                    pass
+
+        except (
+            InsufficientStockError,
+            ValueError,
+        ) as error:
+
+            if form is None:
+
+                order = get_object_or_404(
+                    Order,
+                    pk=pk,
+                    business=business,
+                )
+
+                financial_editable = (
+                    order.status
+                    in editable_order_statuses
+                )
+
+                can_edit_items = (
+                    order.status
+                    in editable_order_statuses
+                )
+
+                form = OrderForm(
+                    request.POST,
+                    instance=order,
+                    business=business,
+                    edit_mode=True,
+                    financial_editable=(
+                        financial_editable
+                    ),
+                )
+
+                if can_edit_items:
+
+                    formset = (
+                        OrderItemFormSet(
+                            request.POST,
+                            instance=order,
+                            form_kwargs={
+                                "business":
+                                    business,
+                            },
+                        )
+                    )
+
+            form.add_error(
+                None,
+                str(error),
+            )
+
+        else:
+
+            if (
+                form is not None
+                and form.is_valid()
+                and (
+                    not can_edit_items
+                    or (
+                        formset is not None
+                        and formset.is_valid()
+                    )
+                )
+            ):
+
+                messages.success(
+                    request,
+                    (
+                        f"{order.order_number} "
+                        "was updated successfully."
+                    ),
+                )
+
+                return redirect(
+                    "orders:detail",
+                    pk=order.pk,
+                )
+
+    # =====================================================
+    # GET
+    # =====================================================
+
+    else:
+
+        form = OrderForm(
+            instance=order,
+            business=business,
+            edit_mode=True,
+            financial_editable=(
+                financial_editable
+            ),
+        )
+
+        if can_edit_items:
+
+            formset = OrderItemFormSet(
+                instance=order,
+                form_kwargs={
+                    "business":
+                        business,
+                },
+            )
+
+    # =====================================================
+    # RENDER
+    # =====================================================
+
+    return render(
+        request,
+        "orders/order_form.html",
+        {
+            "form":
+                form,
+
+            "formset":
+                formset,
+
+            "business":
+                business,
+
+            "order":
+                order,
+
+            "page_title":
+                f"Edit {order.order_number}",
+
+            "is_edit":
+                True,
+
+            "can_edit_items":
+                can_edit_items,
+
+            "financial_editable":
+                financial_editable,
+        },
+    )
+
 
 # =========================================================
 
@@ -1438,9 +2210,8 @@ def order_status_update(
             )
 
             sync_order_inventory(
-
-                order
-
+                order,
+                adjusted_by=request.user,
             )
 
             OrderStatusHistory.objects.create(

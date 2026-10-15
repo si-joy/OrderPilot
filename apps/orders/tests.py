@@ -9,7 +9,10 @@ from apps.businesses.models import (
     BusinessMember,
 )
 from apps.customers.models import Customer
-from apps.products.models import Product
+from apps.products.models import (
+    Product,
+    StockAdjustment,
+)
 
 from .models import (
     Order,
@@ -24,6 +27,9 @@ from .views import (
 )
 
 from django.db import IntegrityError, transaction
+
+from .forms import OrderItemFormSet
+
 
 
 User = get_user_model()
@@ -1646,4 +1652,1336 @@ class OrderInventoryTests(TestCase):
         self.assertEqual(
             self.order.due_amount,
             Decimal("2500.00"),
+        )
+
+        # =========================================================
+    # ORDER EDIT HELPERS
+    # =========================================================
+
+    def _order_edit_payload(
+        self,
+        *,
+        order=None,
+        quantity=None,
+        discount=None,
+        delivery_charge=None,
+        customer=None,
+        payment_method=None,
+        notes=None,
+    ):
+
+        order = order or self.order
+
+        item = order.items.first()
+
+        if quantity is None:
+            quantity = item.quantity
+
+        if discount is None:
+            discount = order.discount
+
+        if delivery_charge is None:
+            delivery_charge = order.delivery_charge
+
+        if customer is None:
+            customer = order.customer
+
+        if payment_method is None:
+            payment_method = order.payment_method
+
+        if notes is None:
+            notes = order.notes
+
+        formset = OrderItemFormSet(
+            instance=order,
+            form_kwargs={
+                "business": order.business,
+            },
+        )
+
+        prefix = formset.prefix
+
+        return {
+            "customer": str(customer.pk),
+            "status": order.status,
+            "payment_method": payment_method,
+            "discount": str(discount),
+            "delivery_charge": str(
+                delivery_charge
+            ),
+            "paid_amount": str(
+                order.paid_amount
+            ),
+            "courier_name": (
+                order.courier_name
+                or ""
+            ),
+            "tracking_number": (
+                order.tracking_number
+                or ""
+            ),
+            "delivery_address": (
+                order.delivery_address
+                or ""
+            ),
+            "notes": notes or "",
+
+            f"{prefix}-TOTAL_FORMS": "1",
+            f"{prefix}-INITIAL_FORMS": "1",
+            f"{prefix}-MIN_NUM_FORMS": "1",
+            f"{prefix}-MAX_NUM_FORMS": "1000",
+
+            f"{prefix}-0-id": str(
+                item.pk
+            ),
+            f"{prefix}-0-product": str(
+                item.product_id
+            ),
+            f"{prefix}-0-quantity": str(
+                quantity
+            ),
+        }
+
+    def _change_order_status(
+        self,
+        status,
+    ):
+
+        response = self.client.post(
+            reverse(
+                "orders:status_update",
+                args=[self.order.pk],
+            ),
+            {
+                "status": status,
+                "note": "Test status change.",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        self.order.refresh_from_db()
+
+    # =========================================================
+    # ORDER EDIT TESTS
+    # =========================================================
+
+    def test_pending_order_quantity_can_be_edited(
+        self,
+    ):
+
+        item = self.order.items.first()
+
+        old_quantity = item.quantity
+
+        product = item.product
+
+        old_stock = (
+            product.stock_quantity
+        )
+
+        new_quantity = (
+            old_quantity + 1
+        )
+
+        response = self.client.post(
+            reverse(
+                "orders:edit",
+                args=[self.order.pk],
+            ),
+            self._order_edit_payload(
+                quantity=new_quantity,
+            ),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        self.order.refresh_from_db()
+
+        item.refresh_from_db()
+
+        product.refresh_from_db()
+
+        self.assertEqual(
+            item.quantity,
+            new_quantity,
+        )
+
+        # Pending orders do not commit stock.
+        self.assertEqual(
+            product.stock_quantity,
+            old_stock,
+        )
+
+        self.assertFalse(
+            self.order.stock_deducted
+        )
+
+    def test_confirmed_order_quantity_increase_adjusts_stock(
+        self,
+    ):
+
+        self._change_order_status(
+            Order.STATUS_CONFIRMED
+        )
+
+        item = self.order.items.first()
+
+        product = item.product
+
+        product.refresh_from_db()
+
+        stock_after_confirm = (
+            product.stock_quantity
+        )
+
+        old_quantity = item.quantity
+
+        new_quantity = (
+            old_quantity + 1
+        )
+
+        response = self.client.post(
+            reverse(
+                "orders:edit",
+                args=[self.order.pk],
+            ),
+            self._order_edit_payload(
+                quantity=new_quantity,
+            ),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        item.refresh_from_db()
+
+        product.refresh_from_db()
+
+        self.order.refresh_from_db()
+
+        self.assertEqual(
+            item.quantity,
+            new_quantity,
+        )
+
+        self.assertEqual(
+            product.stock_quantity,
+            stock_after_confirm - 1,
+        )
+
+        self.assertTrue(
+            self.order.stock_deducted
+        )
+
+    def test_confirmed_order_quantity_decrease_restores_stock(
+        self,
+    ):
+
+        item = self.order.items.first()
+
+        if item.quantity < 2:
+
+            item.quantity = 2
+
+            item.save(
+                update_fields=[
+                    "quantity",
+                ]
+            )
+
+        self._change_order_status(
+            Order.STATUS_CONFIRMED
+        )
+
+        item.refresh_from_db()
+
+        product = item.product
+
+        product.refresh_from_db()
+
+        stock_after_confirm = (
+            product.stock_quantity
+        )
+
+        old_quantity = item.quantity
+
+        new_quantity = (
+            old_quantity - 1
+        )
+
+        response = self.client.post(
+            reverse(
+                "orders:edit",
+                args=[self.order.pk],
+            ),
+            self._order_edit_payload(
+                quantity=new_quantity,
+            ),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        item.refresh_from_db()
+
+        product.refresh_from_db()
+
+        self.order.refresh_from_db()
+
+        self.assertEqual(
+            item.quantity,
+            new_quantity,
+        )
+
+        self.assertEqual(
+            product.stock_quantity,
+            stock_after_confirm + 1,
+        )
+
+        self.assertTrue(
+            self.order.stock_deducted
+        )
+
+    def test_confirmed_order_edit_rolls_back_when_stock_is_insufficient(
+        self,
+    ):
+
+        self._change_order_status(
+            Order.STATUS_CONFIRMED
+        )
+
+        item = self.order.items.first()
+
+        product = item.product
+
+        item.refresh_from_db()
+        product.refresh_from_db()
+
+        original_quantity = (
+            item.quantity
+        )
+
+        original_stock = (
+            product.stock_quantity
+        )
+
+        original_total = (
+            self.order.total_amount
+        )
+
+        # During edit the old stock will first be restored.
+        # Request far more than could ever be available.
+        impossible_quantity = (
+            original_stock
+            + original_quantity
+            + 100
+        )
+
+        response = self.client.post(
+            reverse(
+                "orders:edit",
+                args=[self.order.pk],
+            ),
+            self._order_edit_payload(
+                quantity=(
+                    impossible_quantity
+                ),
+            ),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.order.refresh_from_db()
+
+        item.refresh_from_db()
+
+        product.refresh_from_db()
+
+        # Everything must roll back.
+        self.assertEqual(
+            item.quantity,
+            original_quantity,
+        )
+
+        self.assertEqual(
+            product.stock_quantity,
+            original_stock,
+        )
+
+        self.assertEqual(
+            self.order.total_amount,
+            original_total,
+        )
+
+        self.assertTrue(
+            self.order.stock_deducted
+        )
+
+    def test_shipped_order_product_and_financial_edit_are_locked(
+        self,
+    ):
+
+        self._change_order_status(
+            Order.STATUS_CONFIRMED
+        )
+
+        self._change_order_status(
+            Order.STATUS_PROCESSING
+        )
+
+        self._change_order_status(
+            Order.STATUS_SHIPPED
+        )
+
+        item = self.order.items.first()
+
+        item.refresh_from_db()
+
+        original_quantity = (
+            item.quantity
+        )
+
+        original_discount = (
+            self.order.discount
+        )
+
+        original_delivery_charge = (
+            self.order.delivery_charge
+        )
+
+        original_customer_id = (
+            self.order.customer_id
+        )
+
+        formset = OrderItemFormSet(
+            instance=self.order,
+            form_kwargs={
+                "business": self.business,
+            },
+        )
+
+        prefix = formset.prefix
+
+        payload = {
+            "customer": str(
+                self.order.customer_id
+            ),
+            "status": (
+                self.order.status
+            ),
+            "payment_method": (
+                self.order.payment_method
+            ),
+
+            # Malicious financial changes.
+            "discount": "9999.00",
+            "delivery_charge": "9999.00",
+            "paid_amount": "0.00",
+
+            "courier_name": (
+                self.order.courier_name
+                or ""
+            ),
+            "tracking_number": (
+                self.order.tracking_number
+                or ""
+            ),
+            "delivery_address": (
+                self.order.delivery_address
+                or ""
+            ),
+            "notes": (
+                "Safe operational correction"
+            ),
+
+            # Malicious product edit.
+            f"{prefix}-TOTAL_FORMS":
+                "1",
+
+            f"{prefix}-INITIAL_FORMS":
+                "1",
+
+            f"{prefix}-MIN_NUM_FORMS":
+                "1",
+
+            f"{prefix}-MAX_NUM_FORMS":
+                "1000",
+
+            f"{prefix}-0-id":
+                str(item.pk),
+
+            f"{prefix}-0-product":
+                str(item.product_id),
+
+            f"{prefix}-0-quantity":
+                str(
+                    original_quantity + 10
+                ),
+        }
+
+        response = self.client.post(
+            reverse(
+                "orders:edit",
+                args=[self.order.pk],
+            ),
+            payload,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        self.order.refresh_from_db()
+
+        item.refresh_from_db()
+
+        self.assertEqual(
+            item.quantity,
+            original_quantity,
+        )
+
+        self.assertEqual(
+            self.order.discount,
+            original_discount,
+        )
+
+        self.assertEqual(
+            self.order.delivery_charge,
+            original_delivery_charge,
+        )
+
+        self.assertEqual(
+            self.order.customer_id,
+            original_customer_id,
+        )
+
+        # Safe field should still update.
+        self.assertEqual(
+            self.order.notes,
+            "Safe operational correction",
+        )
+
+    def test_order_edit_preserves_payment_and_refund_history(
+        self,
+    ):
+
+        # Record full payment first.
+        self._record_full_payment()
+
+        # Partial refund.
+        self.client.post(
+            reverse(
+                "orders:refund_create",
+                args=[self.order.pk],
+            ),
+            {
+                "amount": "500.00",
+                "refund_method":
+                    Order.PAYMENT_BKASH,
+                "reference":
+                    "EDIT-REFUND-TEST",
+                "note":
+                    "Refund before edit.",
+            },
+        )
+
+        self.order.refresh_from_db()
+
+        paid_before = (
+            self.order.paid_amount
+        )
+
+        refunded_before = (
+            self.order.refunded_amount
+        )
+
+        payment_count_before = (
+            self.order.payments.count()
+        )
+
+        refund_count_before = (
+            self.order.refunds.count()
+        )
+
+        item = self.order.items.first()
+
+        response = self.client.post(
+            reverse(
+                "orders:edit",
+                args=[self.order.pk],
+            ),
+            self._order_edit_payload(
+                quantity=item.quantity,
+                delivery_charge=Decimal(
+                    "1000.00"
+                ),
+            ),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        self.order.refresh_from_db()
+
+        self.assertEqual(
+            self.order.paid_amount,
+            paid_before,
+        )
+
+        self.assertEqual(
+            self.order.refunded_amount,
+            refunded_before,
+        )
+
+        self.assertEqual(
+            self.order.payments.count(),
+            payment_count_before,
+        )
+
+        self.assertEqual(
+            self.order.refunds.count(),
+            refund_count_before,
+        )
+
+    def test_order_edit_cannot_reduce_total_below_net_paid_amount(
+        self,
+    ):
+
+        self._record_full_payment()
+
+        self.order.refresh_from_db()
+
+        original_total = (
+            self.order.total_amount
+        )
+
+        original_discount = (
+            self.order.discount
+        )
+
+        item = self.order.items.first()
+
+        # Force calculated total below retained payment.
+        huge_discount = (
+            item.line_total
+            + self.order.delivery_charge
+        )
+
+        response = self.client.post(
+            reverse(
+                "orders:edit",
+                args=[self.order.pk],
+            ),
+            self._order_edit_payload(
+                discount=huge_discount,
+            ),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.order.refresh_from_db()
+
+        self.assertEqual(
+            self.order.total_amount,
+            original_total,
+        )
+
+        self.assertEqual(
+            self.order.discount,
+            original_discount,
+        )
+
+    def test_user_cannot_edit_other_business_order(
+        self,
+    ):
+
+        response = self.client.get(
+            reverse(
+                "orders:edit",
+                args=[
+                    self.other_order.pk
+                ],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            404,
+        )
+
+        # =========================================================
+    # ORDER-DRIVEN STOCK AUDIT TESTS
+    # =========================================================
+
+    def test_confirmed_order_creates_stock_deduction_history(
+        self,
+    ):
+
+        item = self.order.items.first()
+
+        product = item.product
+
+        product.refresh_from_db()
+
+        stock_before = (
+            product.stock_quantity
+        )
+
+        quantity = item.quantity
+
+        self._change_order_status(
+            Order.STATUS_CONFIRMED
+        )
+
+        product.refresh_from_db()
+
+        adjustment = (
+            StockAdjustment.objects
+            .filter(
+                order=self.order,
+                product=product,
+                adjustment_type=(
+                    StockAdjustment
+                    .TYPE_ORDER_DEDUCT
+                ),
+            )
+            .latest("id")
+        )
+
+        self.assertEqual(
+            adjustment.quantity,
+            quantity,
+        )
+
+        self.assertEqual(
+            adjustment.before_quantity,
+            stock_before,
+        )
+
+        self.assertEqual(
+            adjustment.after_quantity,
+            stock_before - quantity,
+        )
+
+        self.assertEqual(
+            adjustment.business,
+            self.business,
+        )
+
+        self.assertEqual(
+            adjustment.adjusted_by,
+            self.user,
+        )
+
+
+    def test_cancelled_confirmed_order_creates_stock_restore_history(
+        self,
+    ):
+
+        item = self.order.items.first()
+
+        product = item.product
+
+        quantity = item.quantity
+
+        self._change_order_status(
+            Order.STATUS_CONFIRMED
+        )
+
+        product.refresh_from_db()
+
+        stock_after_confirm = (
+            product.stock_quantity
+        )
+
+        self._change_order_status(
+            Order.STATUS_CANCELLED
+        )
+
+        product.refresh_from_db()
+
+        adjustment = (
+            StockAdjustment.objects
+            .filter(
+                order=self.order,
+                product=product,
+                adjustment_type=(
+                    StockAdjustment
+                    .TYPE_ORDER_RESTORE
+                ),
+            )
+            .latest("id")
+        )
+
+        self.assertEqual(
+            adjustment.quantity,
+            quantity,
+        )
+
+        self.assertEqual(
+            adjustment.before_quantity,
+            stock_after_confirm,
+        )
+
+        self.assertEqual(
+            adjustment.after_quantity,
+            stock_after_confirm + quantity,
+        )
+
+        self.assertEqual(
+            product.stock_quantity,
+            stock_after_confirm + quantity,
+        )
+
+
+    def test_returned_order_creates_stock_restore_history(
+        self,
+    ):
+
+        item = self.order.items.first()
+
+        product = item.product
+
+        quantity = item.quantity
+
+        self._change_order_status(
+            Order.STATUS_CONFIRMED
+        )
+
+        self._change_order_status(
+            Order.STATUS_PROCESSING
+        )
+
+        self._change_order_status(
+            Order.STATUS_SHIPPED
+        )
+
+        product.refresh_from_db()
+
+        stock_before_return = (
+            product.stock_quantity
+        )
+
+        self._change_order_status(
+            Order.STATUS_RETURNED
+        )
+
+        product.refresh_from_db()
+
+        adjustment = (
+            StockAdjustment.objects
+            .filter(
+                order=self.order,
+                product=product,
+                adjustment_type=(
+                    StockAdjustment
+                    .TYPE_ORDER_RESTORE
+                ),
+            )
+            .latest("id")
+        )
+
+        self.assertEqual(
+            adjustment.quantity,
+            quantity,
+        )
+
+        self.assertEqual(
+            adjustment.before_quantity,
+            stock_before_return,
+        )
+
+        self.assertEqual(
+            adjustment.after_quantity,
+            stock_before_return + quantity,
+        )
+
+        self.assertEqual(
+            adjustment.adjusted_by,
+            self.user,
+        )
+
+
+    def test_confirmed_order_edit_creates_restore_and_deduct_history(
+        self,
+    ):
+
+        self._change_order_status(
+            Order.STATUS_CONFIRMED
+        )
+
+        item = self.order.items.first()
+
+        old_quantity = item.quantity
+
+        new_quantity = (
+            old_quantity + 1
+        )
+
+        before_restore_count = (
+            StockAdjustment.objects
+            .filter(
+                order=self.order,
+                adjustment_type=(
+                    StockAdjustment
+                    .TYPE_ORDER_RESTORE
+                ),
+            )
+            .count()
+        )
+
+        before_deduct_count = (
+            StockAdjustment.objects
+            .filter(
+                order=self.order,
+                adjustment_type=(
+                    StockAdjustment
+                    .TYPE_ORDER_DEDUCT
+                ),
+            )
+            .count()
+        )
+
+        response = self.client.post(
+            reverse(
+                "orders:edit",
+                args=[
+                    self.order.pk
+                ],
+            ),
+            self._order_edit_payload(
+                quantity=new_quantity,
+            ),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        restore_count = (
+            StockAdjustment.objects
+            .filter(
+                order=self.order,
+                adjustment_type=(
+                    StockAdjustment
+                    .TYPE_ORDER_RESTORE
+                ),
+            )
+            .count()
+        )
+
+        deduct_count = (
+            StockAdjustment.objects
+            .filter(
+                order=self.order,
+                adjustment_type=(
+                    StockAdjustment
+                    .TYPE_ORDER_DEDUCT
+                ),
+            )
+            .count()
+        )
+
+        self.assertEqual(
+            restore_count,
+            before_restore_count + 1,
+        )
+
+        self.assertEqual(
+            deduct_count,
+            before_deduct_count + 1,
+        )
+
+        latest_restore = (
+            StockAdjustment.objects
+            .filter(
+                order=self.order,
+                adjustment_type=(
+                    StockAdjustment
+                    .TYPE_ORDER_RESTORE
+                ),
+            )
+            .latest("id")
+        )
+
+        latest_deduct = (
+            StockAdjustment.objects
+            .filter(
+                order=self.order,
+                adjustment_type=(
+                    StockAdjustment
+                    .TYPE_ORDER_DEDUCT
+                ),
+            )
+            .latest("id")
+        )
+
+        self.assertEqual(
+            latest_restore.quantity,
+            old_quantity,
+        )
+
+        self.assertEqual(
+            latest_deduct.quantity,
+            new_quantity,
+        )
+
+
+    def test_repeating_confirmed_status_does_not_create_duplicate_stock_history(
+        self,
+    ):
+
+        self._change_order_status(
+            Order.STATUS_CONFIRMED
+        )
+
+        initial_count = (
+            StockAdjustment.objects
+            .filter(
+                order=self.order,
+                adjustment_type=(
+                    StockAdjustment
+                    .TYPE_ORDER_DEDUCT
+                ),
+            )
+            .count()
+        )
+
+        response = self.client.post(
+            reverse(
+                "orders:status_update",
+                args=[
+                    self.order.pk
+                ],
+            ),
+            {
+                "status":
+                    Order.STATUS_CONFIRMED,
+
+                "note":
+                    "Repeated status request.",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        final_count = (
+            StockAdjustment.objects
+            .filter(
+                order=self.order,
+                adjustment_type=(
+                    StockAdjustment
+                    .TYPE_ORDER_DEDUCT
+                ),
+            )
+            .count()
+        )
+
+        self.assertEqual(
+            final_count,
+            initial_count,
+        )
+
+        # =========================================================
+    # ORDER LIST SEARCH / FILTER / PAGINATION TESTS
+    # =========================================================
+
+    def test_order_list_search_by_order_number(
+        self,
+    ):
+
+        response = self.client.get(
+            reverse("orders:list"),
+            {
+                "q": self.order.order_number,
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            self.order.order_number,
+        )
+
+        self.assertNotContains(
+            response,
+            self.other_order.order_number,
+        )
+
+
+    def test_order_list_search_by_customer_name(
+        self,
+    ):
+
+        response = self.client.get(
+            reverse("orders:list"),
+            {
+                "q": self.order.customer.full_name,
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            self.order.order_number,
+        )
+
+
+    def test_order_list_search_by_customer_phone(
+        self,
+    ):
+
+        response = self.client.get(
+            reverse("orders:list"),
+            {
+                "q": self.order.customer.phone,
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            self.order.order_number,
+        )
+
+
+    def test_order_list_filters_by_status(
+        self,
+    ):
+
+        self._change_order_status(
+            Order.STATUS_CONFIRMED
+        )
+
+        response = self.client.get(
+            reverse("orders:list"),
+            {
+                "status":
+                    Order.STATUS_CONFIRMED,
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            self.order.order_number,
+        )
+
+
+    def test_order_list_filters_by_payment_status(
+        self,
+    ):
+
+        self._record_full_payment()
+
+        self.order.refresh_from_db()
+
+        response = self.client.get(
+            reverse("orders:list"),
+            {
+                "payment_status":
+                    Order.PAYMENT_PAID,
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            self.order.order_number,
+        )
+
+
+    def test_order_list_filters_by_date_range(
+        self,
+    ):
+
+        order_date = (
+            self.order.created_at
+            .date()
+            .isoformat()
+        )
+
+        response = self.client.get(
+            reverse("orders:list"),
+            {
+                "date_from":
+                    order_date,
+
+                "date_to":
+                    order_date,
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            self.order.order_number,
+        )
+
+
+    def test_order_list_does_not_show_other_business_orders(
+        self,
+    ):
+
+        response = self.client.get(
+            reverse("orders:list")
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertContains(
+            response,
+            self.order.order_number,
+        )
+
+        self.assertNotContains(
+            response,
+            self.other_order.order_number,
+        )
+
+
+    def test_order_list_paginates_results(
+        self,
+    ):
+
+        customer = self.order.customer
+
+        for index in range(20):
+
+            Order.objects.create(
+                business=self.business,
+                customer=customer,
+                created_by=self.user,
+                status=Order.STATUS_PENDING,
+                payment_method=(
+                    Order.PAYMENT_COD
+                ),
+                payment_status=(
+                    Order.PAYMENT_UNPAID
+                ),
+                subtotal="100.00",
+                discount="0.00",
+                delivery_charge="0.00",
+                total_amount="100.00",
+                paid_amount="0.00",
+                refunded_amount="0.00",
+                delivery_address="Test",
+            )
+
+        response = self.client.get(
+            reverse("orders:list")
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        page_obj = (
+            response.context["page_obj"]
+        )
+
+        self.assertEqual(
+            len(
+                response.context[
+                    "orders"
+                ]
+            ),
+            15,
+        )
+
+        self.assertTrue(
+            page_obj.has_next()
+        )
+
+
+    def test_order_list_filter_query_is_preserved_for_pagination(
+        self,
+    ):
+
+        response = self.client.get(
+            reverse("orders:list"),
+            {
+                "q": "test search",
+                "status":
+                    Order.STATUS_PENDING,
+                "page": "2",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        filter_query = (
+            response.context[
+                "filter_query"
+            ]
+        )
+
+        self.assertIn(
+            "q=test+search",
+            filter_query,
+        )
+
+        self.assertIn(
+            "status=pending",
+            filter_query,
+        )
+
+        self.assertNotIn(
+            "page=",
+            filter_query,
         )

@@ -7,7 +7,12 @@ app_name = "products"
 
 
 urlpatterns = [
-    path("", views.product_list, name="list"),
+
+    path(
+        "",
+        views.product_list,
+        name="list",
+    ),
 
     path(
         "new/",
@@ -25,6 +30,12 @@ urlpatterns = [
         "<int:pk>/edit/",
         views.product_update,
         name="update",
+    ),
+
+    path(
+        "<int:pk>/stock-adjust/",
+        views.product_stock_adjust,
+        name="stock_adjust",
     ),
 
     path(
