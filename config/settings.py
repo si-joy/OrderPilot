@@ -4,6 +4,7 @@ import sys
 
 import dj_database_url
 from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 
 # =========================================================
@@ -41,6 +42,20 @@ IS_VERCEL = (
     )
     == "1"
 )
+
+# =========================================================
+# SECRET KEY VALIDATION
+# =========================================================
+
+if (
+    (IS_VERCEL or not DEBUG)
+    and SECRET_KEY
+    == "django-insecure-dev-key"
+):
+    raise ImproperlyConfigured(
+        "SECRET_KEY environment variable "
+        "must be configured in production."
+    )
 
 IS_TESTING = "test" in sys.argv
 
@@ -414,8 +429,11 @@ DEFAULT_AUTO_FIELD = (
 if IS_VERCEL or not DEBUG:
 
     SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
 
     CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_SAMESITE = "Lax"
 
     SECURE_SSL_REDIRECT = True
 
@@ -425,6 +443,10 @@ if IS_VERCEL or not DEBUG:
     )
 
     SECURE_CONTENT_TYPE_NOSNIFF = True
+
+    SECURE_CROSS_ORIGIN_OPENER_POLICY = (
+        "same-origin"
+    )
 
     X_FRAME_OPTIONS = "DENY"
 
@@ -438,7 +460,5 @@ if IS_VERCEL or not DEBUG:
 if IS_VERCEL:
 
     SECURE_HSTS_SECONDS = 3600
-
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-
     SECURE_HSTS_PRELOAD = False

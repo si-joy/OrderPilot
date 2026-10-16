@@ -12,6 +12,11 @@ from django.views.decorators.http import require_POST
 
 from apps.businesses.utils import get_current_business
 
+from apps.businesses.permissions import (
+    can_manage_business,
+    management_required,
+)
+
 from .forms import (
     ProductForm,
     StockAdjustmentForm,
@@ -228,6 +233,12 @@ def product_detail(
 
             "adjustment_form":
                 adjustment_form,
+                
+            "can_manage_inventory":
+                can_manage_business(
+                    request.user,
+                    business,
+                ),
         },
     )
 
@@ -413,6 +424,7 @@ def product_update(
 # =========================================================
 
 @login_required
+@management_required
 @require_POST
 def product_stock_adjust(
     request,
@@ -572,6 +584,7 @@ def product_stock_adjust(
 
 
 @login_required
+@management_required
 @require_POST
 def product_archive(
     request,
@@ -612,6 +625,7 @@ def product_archive(
 
 
 @login_required
+@management_required
 @require_POST
 def product_restore(
     request,

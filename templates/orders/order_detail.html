@@ -138,7 +138,6 @@ Order details and payment summary.
     }
 
 
-
     /* =====================================================
        REFUND FORM
     ===================================================== */
@@ -200,46 +199,7 @@ Order details and payment summary.
 
 
     /* =====================================================
-       REFUND HISTORY WIDTHS
-    ===================================================== */
-
-    .op-refund-history th:nth-child(1),
-    .op-refund-history td:nth-child(1) {
-        width: 14%;
-    }
-
-
-    .op-refund-history th:nth-child(2),
-    .op-refund-history td:nth-child(2) {
-        width: 17%;
-    }
-
-
-    .op-refund-history th:nth-child(3),
-    .op-refund-history td:nth-child(3) {
-        width: 19%;
-    }
-
-
-    .op-refund-history th:nth-child(4),
-    .op-refund-history td:nth-child(4) {
-        width: 17%;
-    }
-
-
-    .op-refund-history th:nth-child(5),
-    .op-refund-history td:nth-child(5) {
-        width: 18%;
-    }
-
-
-    .op-refund-history th:nth-child(6),
-    .op-refund-history td:nth-child(6) {
-        width: 15%;
-    }
-
-    /* =====================================================
-       COMPLETE / FINAL STATE
+       COMPLETE STATE
     ===================================================== */
 
     .op-complete-state {
@@ -269,7 +229,7 @@ Order details and payment summary.
 
 
     /* =====================================================
-       OVERFLOW-SAFE TABLE PANEL
+       TABLE PANEL
     ===================================================== */
 
     .op-table-panel {
@@ -324,13 +284,6 @@ Order details and payment summary.
         padding-right: 22px;
     }
 
-
-    /*
-       Important:
-       Existing app.css adds hover to <tr>.
-       We move it to the cells so the parent
-       panel clips everything correctly.
-    */
 
     .op-table-wrapper .data-table tbody tr {
         background: transparent;
@@ -388,6 +341,46 @@ Order details and payment summary.
 
     .op-payment-history th:nth-child(6),
     .op-payment-history td:nth-child(6) {
+        width: 15%;
+    }
+
+
+    /* =====================================================
+       REFUND HISTORY WIDTHS
+    ===================================================== */
+
+    .op-refund-history th:nth-child(1),
+    .op-refund-history td:nth-child(1) {
+        width: 14%;
+    }
+
+
+    .op-refund-history th:nth-child(2),
+    .op-refund-history td:nth-child(2) {
+        width: 17%;
+    }
+
+
+    .op-refund-history th:nth-child(3),
+    .op-refund-history td:nth-child(3) {
+        width: 19%;
+    }
+
+
+    .op-refund-history th:nth-child(4),
+    .op-refund-history td:nth-child(4) {
+        width: 17%;
+    }
+
+
+    .op-refund-history th:nth-child(5),
+    .op-refund-history td:nth-child(5) {
+        width: 18%;
+    }
+
+
+    .op-refund-history th:nth-child(6),
+    .op-refund-history td:nth-child(6) {
         width: 15%;
     }
 
@@ -473,6 +466,114 @@ Order details and payment summary.
 
 
     /* =====================================================
+       COURIER + COD SETTLEMENT
+    ===================================================== */
+
+    .op-courier-form {
+        display: grid;
+
+        grid-template-columns:
+            repeat(4, minmax(0, 1fr));
+
+        gap: 16px;
+    }
+
+
+    .op-courier-field {
+        min-width: 0;
+    }
+
+
+    .op-courier-field-wide {
+        grid-column: span 2;
+    }
+
+
+    .op-courier-footer {
+        grid-column: 1 / -1;
+
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        gap: 18px;
+
+        margin-top: 4px;
+    }
+
+
+    .op-courier-summary {
+        display: flex;
+        align-items: center;
+
+        gap: 10px;
+
+        min-width: 0;
+    }
+
+
+    .op-courier-summary-text {
+        color: var(--text-secondary);
+
+        font-size: 12px;
+    }
+
+
+    .op-courier-summary-text strong {
+        color: var(--text-primary);
+    }
+
+
+    .op-courier-action {
+        flex: 0 0 auto;
+    }
+
+
+    .op-courier-action .btn {
+        min-height: 42px;
+    }
+
+
+    .op-settlement-badge {
+        display: inline-flex;
+        align-items: center;
+
+        min-height: 26px;
+
+        padding: 4px 10px;
+
+        border-radius: 999px;
+
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+
+    .op-settlement-pending {
+        background:
+            rgba(245, 158, 11, 0.12);
+
+        color: #d97706;
+    }
+
+
+    .op-settlement-partial {
+        background:
+            rgba(59, 130, 246, 0.12);
+
+        color: #2563eb;
+    }
+
+
+    .op-settlement-settled {
+        background:
+            rgba(22, 163, 74, 0.12);
+
+        color: #16a34a;
+    }
+
+
+    /* =====================================================
        RESPONSIVE
     ===================================================== */
 
@@ -492,6 +593,16 @@ Order details and payment summary.
             justify-content: flex-end;
 
             padding-top: 0;
+        }
+
+    }
+
+
+    @media (max-width: 1100px) {
+
+        .op-courier-form {
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
         }
 
     }
@@ -530,7 +641,8 @@ Order details and payment summary.
 
         .op-status-form,
         .op-payment-form,
-        .op-refund-form {
+        .op-refund-form,
+        .op-courier-form {
             grid-template-columns: 1fr;
         }
 
@@ -546,7 +658,8 @@ Order details and payment summary.
 
         .op-status-action .btn,
         .op-payment-action .btn,
-        .op-refund-action .btn {
+        .op-refund-action .btn,
+        .op-courier-action .btn {
             width: 100%;
         }
 
@@ -556,152 +669,20 @@ Order details and payment summary.
             flex-direction: column;
         }
 
+
+        .op-courier-field-wide {
+            grid-column: auto;
+        }
+
+
+        .op-courier-footer {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
     }
-
-    /* =====================================================
-   COURIER + COD SETTLEMENT
-===================================================== */
-
-.op-courier-form {
-    display: grid;
-
-    grid-template-columns:
-        repeat(4, minmax(0, 1fr));
-
-    gap: 16px;
-}
-
-
-.op-courier-field {
-    min-width: 0;
-}
-
-
-.op-courier-field-wide {
-    grid-column: span 2;
-}
-
-
-.op-courier-footer {
-    grid-column: 1 / -1;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    gap: 18px;
-
-    margin-top: 4px;
-}
-
-
-.op-courier-summary {
-    display: flex;
-    align-items: center;
-
-    gap: 10px;
-
-    min-width: 0;
-}
-
-
-.op-courier-summary-text {
-    color: var(--text-secondary);
-
-    font-size: 12px;
-}
-
-
-.op-courier-summary-text strong {
-    color: var(--text-primary);
-}
-
-
-.op-courier-action {
-    flex: 0 0 auto;
-}
-
-
-.op-courier-action .btn {
-    min-height: 42px;
-}
-
-
-.op-settlement-badge {
-    display: inline-flex;
-    align-items: center;
-
-    min-height: 26px;
-
-    padding: 4px 10px;
-
-    border-radius: 999px;
-
-    font-size: 11px;
-    font-weight: 700;
-}
-
-
-.op-settlement-pending {
-    background:
-        rgba(245, 158, 11, 0.12);
-
-    color: #d97706;
-}
-
-
-.op-settlement-partial {
-    background:
-        rgba(59, 130, 246, 0.12);
-
-    color: #2563eb;
-}
-
-
-.op-settlement-settled {
-    background:
-        rgba(22, 163, 74, 0.12);
-
-    color: #16a34a;
-}
-
-
-@media (max-width: 1100px) {
-
-    .op-courier-form {
-        grid-template-columns:
-            repeat(2, minmax(0, 1fr));
-    }
-
-}
-
-
-@media (max-width: 700px) {
-
-    .op-courier-form {
-        grid-template-columns: 1fr;
-    }
-
-
-    .op-courier-field-wide {
-        grid-column: auto;
-    }
-
-
-    .op-courier-footer {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-
-    .op-courier-action .btn {
-        width: 100%;
-    }
-
-}
 
 </style>
-
 
 
 {# ===================================================== #}
@@ -730,9 +711,8 @@ Order details and payment summary.
 {% endif %}
 
 
-
 {# ===================================================== #}
-{# BACK                                                  #}
+{# TOOLBAR                                               #}
 {# ===================================================== #}
 
 <div class="detail-toolbar">
@@ -761,12 +741,12 @@ Order details and payment summary.
 </div>
 
 
-
 {# ===================================================== #}
 {# ORDER INFORMATION                                     #}
 {# ===================================================== #}
 
 <div class="detail-grid">
+
 
     <section class="panel">
 
@@ -869,7 +849,6 @@ Order details and payment summary.
         </div>
 
     </section>
-
 
 
     {# ================================================= #}
@@ -1020,13 +999,12 @@ Order details and payment summary.
 </div>
 
 
-
 <div class="op-section-gap"></div>
-
 
 
 {# ===================================================== #}
 {# UPDATE STATUS                                         #}
+{# Staff is allowed to update operational status.        #}
 {# ===================================================== #}
 
 <section class="panel">
@@ -1070,6 +1048,7 @@ Order details and payment summary.
                         New Status
                     </label>
 
+
                     <select
                         name="status"
                         id="status"
@@ -1104,13 +1083,13 @@ Order details and payment summary.
                         Note
                     </label>
 
+
                     <input
                         type="text"
                         name="note"
                         id="note"
                         class="form-control"
-                        maxlength="255"
-                        placeholder="Optional status note"
+                        placeholder="Optional note"
                     >
 
                 </div>
@@ -1138,7 +1117,7 @@ Order details and payment summary.
                 </span>
 
                 <p>
-                    No further status changes are available.
+                    No further status changes are available for this order.
                 </p>
 
             </div>
@@ -1150,14 +1129,15 @@ Order details and payment summary.
 </section>
 
 
-
 <div class="op-section-gap"></div>
-
 
 
 {# ===================================================== #}
 {# RECORD PAYMENT                                        #}
+{# OWNER / ADMIN ONLY                                    #}
 {# ===================================================== #}
+
+{% if can_manage_finance %}
 
 <section class="panel">
 
@@ -1170,7 +1150,7 @@ Order details and payment summary.
             </h2>
 
             <p>
-                Add a new payment against the outstanding balance.
+                Add a payment received for this order.
             </p>
 
         </div>
@@ -1200,10 +1180,12 @@ Order details and payment summary.
                         Amount
                     </label>
 
+
                     {{ payment_form.amount }}
 
+
                     <div class="op-payment-help">
-                        Current due: ৳{{ order.due_amount }}
+                        Due: ৳{{ order.due_amount }}
                     </div>
 
                 </div>
@@ -1218,7 +1200,9 @@ Order details and payment summary.
                         Method
                     </label>
 
+
                     {{ payment_form.payment_method }}
+
 
                     <div class="op-payment-help">
                         &nbsp;
@@ -1236,7 +1220,9 @@ Order details and payment summary.
                         Reference
                     </label>
 
+
                     {{ payment_form.reference }}
+
 
                     <div class="op-payment-help">
                         &nbsp;
@@ -1254,7 +1240,9 @@ Order details and payment summary.
                         Note
                     </label>
 
+
                     {{ payment_form.note }}
+
 
                     <div class="op-payment-help">
                         &nbsp;
@@ -1297,13 +1285,14 @@ Order details and payment summary.
 </section>
 
 
-
 <div class="op-section-gap"></div>
 
+{% endif %}
 
 
 {# ===================================================== #}
 {# PAYMENT HISTORY                                       #}
+{# Visible to all operational users.                     #}
 {# ===================================================== #}
 
 <section class="panel op-table-panel">
@@ -1355,13 +1344,16 @@ Order details and payment summary.
                             </strong>
                         </td>
 
+
                         <td>
                             {{ payment.get_payment_method_display }}
                         </td>
 
+
                         <td>
                             {{ payment.reference|default:"—" }}
                         </td>
+
 
                         <td>
 
@@ -1373,9 +1365,11 @@ Order details and payment summary.
 
                         </td>
 
+
                         <td>
                             {{ payment.note|default:"—" }}
                         </td>
+
 
                         <td>
                             {{ payment.created_at|date:"d M Y, h:i A" }}
@@ -1407,15 +1401,15 @@ Order details and payment summary.
 </section>
 
 
-
-
-
 <div class="op-section-gap"></div>
 
 
 {# ===================================================== #}
 {# RECORD REFUND                                         #}
+{# OWNER / ADMIN ONLY                                    #}
 {# ===================================================== #}
+
+{% if can_manage_finance %}
 
 <section class="panel">
 
@@ -1458,7 +1452,9 @@ Order details and payment summary.
                         Amount
                     </label>
 
+
                     {{ refund_form.amount }}
+
 
                     <div class="op-refund-help">
                         Refundable: ৳{{ order.refundable_amount }}
@@ -1476,7 +1472,9 @@ Order details and payment summary.
                         Method
                     </label>
 
+
                     {{ refund_form.refund_method }}
+
 
                     <div class="op-refund-help">
                         &nbsp;
@@ -1494,7 +1492,9 @@ Order details and payment summary.
                         Reference
                     </label>
 
+
                     {{ refund_form.reference }}
+
 
                     <div class="op-refund-help">
                         &nbsp;
@@ -1512,7 +1512,9 @@ Order details and payment summary.
                         Note
                     </label>
 
+
                     {{ refund_form.note }}
+
 
                     <div class="op-refund-help">
                         &nbsp;
@@ -1571,9 +1573,12 @@ Order details and payment summary.
 
 <div class="op-section-gap"></div>
 
+{% endif %}
+
 
 {# ===================================================== #}
 {# REFUND HISTORY                                        #}
+{# Visible to all operational users.                     #}
 {# ===================================================== #}
 
 <section class="panel op-table-panel">
@@ -1625,13 +1630,16 @@ Order details and payment summary.
                             </strong>
                         </td>
 
+
                         <td>
                             {{ refund.get_refund_method_display }}
                         </td>
 
+
                         <td>
                             {{ refund.reference|default:"—" }}
                         </td>
+
 
                         <td>
 
@@ -1643,9 +1651,11 @@ Order details and payment summary.
 
                         </td>
 
+
                         <td>
                             {{ refund.note|default:"—" }}
                         </td>
+
 
                         <td>
                             {{ refund.created_at|date:"d M Y, h:i A" }}
@@ -1682,7 +1692,10 @@ Order details and payment summary.
 
 {# ===================================================== #}
 {# COURIER + COD SETTLEMENT                              #}
+{# OWNER / ADMIN ONLY                                    #}
 {# ===================================================== #}
+
+{% if can_manage_finance %}
 
 <section class="panel">
 
@@ -1754,6 +1767,7 @@ Order details and payment summary.
                     Courier
                 </label>
 
+
                 {{ courier_form.courier_name }}
 
             </div>
@@ -1767,6 +1781,7 @@ Order details and payment summary.
                 >
                     Tracking Number
                 </label>
+
 
                 {{ courier_form.tracking_number }}
 
@@ -1782,6 +1797,7 @@ Order details and payment summary.
                     Courier Charge
                 </label>
 
+
                 {{ courier_form.courier_charge }}
 
             </div>
@@ -1795,6 +1811,7 @@ Order details and payment summary.
                 >
                     Return Charge
                 </label>
+
 
                 {{ courier_form.return_charge }}
 
@@ -1810,6 +1827,7 @@ Order details and payment summary.
                     COD Expected
                 </label>
 
+
                 {{ courier_form.cod_expected }}
 
             </div>
@@ -1823,6 +1841,7 @@ Order details and payment summary.
                 >
                     COD Received
                 </label>
+
 
                 {{ courier_form.cod_received }}
 
@@ -1838,6 +1857,7 @@ Order details and payment summary.
                     Reference
                 </label>
 
+
                 {{ courier_form.reference }}
 
             </div>
@@ -1851,6 +1871,7 @@ Order details and payment summary.
                 >
                     Note
                 </label>
+
 
                 {{ courier_form.note }}
 
@@ -1916,7 +1937,11 @@ Order details and payment summary.
 
 </section>
 
+
 <div class="op-section-gap"></div>
+
+{% endif %}
+
 
 {# ===================================================== #}
 {# ORDER ITEMS                                           #}
@@ -1968,17 +1993,21 @@ Order details and payment summary.
                             {{ item.product_name }}
                         </td>
 
+
                         <td>
                             {{ item.sku|default:"—" }}
                         </td>
+
 
                         <td>
                             {{ item.quantity }}
                         </td>
 
+
                         <td>
                             ৳{{ item.unit_price }}
                         </td>
+
 
                         <td>
                             ৳{{ item.line_total }}
@@ -2010,9 +2039,7 @@ Order details and payment summary.
 </section>
 
 
-
 <div class="op-section-gap"></div>
-
 
 
 {# ===================================================== #}
@@ -2064,30 +2091,42 @@ Order details and payment summary.
                         <td>
 
                             {% if history.from_status %}
+
                                 {{ history.get_from_status_display }}
+
                             {% else %}
+
                                 —
+
                             {% endif %}
 
                         </td>
+
 
                         <td>
                             {{ history.get_to_status_display }}
                         </td>
 
+
                         <td>
 
                             {% if history.changed_by %}
+
                                 {{ history.changed_by }}
+
                             {% else %}
+
                                 —
+
                             {% endif %}
 
                         </td>
 
+
                         <td>
                             {{ history.note|default:"—" }}
                         </td>
+
 
                         <td>
                             {{ history.created_at|date:"d M Y, h:i A" }}

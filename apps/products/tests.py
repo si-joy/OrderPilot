@@ -993,3 +993,205 @@ class ProductModuleTests(TestCase):
             len(products),
             0,
         )
+
+        # =========================================================
+    # PRODUCT ROLE / PERMISSION TESTS
+    # =========================================================
+
+    def test_staff_cannot_adjust_stock(
+        self,
+    ):
+
+        staff = User.objects.create_user(
+            username="productstaff",
+            password="testpass123",
+        )
+
+        BusinessMember.objects.create(
+            business=self.business,
+            user=staff,
+            role=BusinessMember.ROLE_STAFF,
+            is_active=True,
+        )
+
+        original_stock = (
+            self.product.stock_quantity
+        )
+
+        self.client.force_login(
+            staff
+        )
+
+        response = self.client.post(
+            reverse(
+                "products:stock_adjust",
+                args=[
+                    self.product.pk,
+                ],
+            ),
+            {
+                "adjustment_type":
+                    "restock",
+
+                "quantity":
+                    5,
+
+                "note":
+                    "Staff should not adjust.",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+        self.product.refresh_from_db()
+
+        self.assertEqual(
+            self.product.stock_quantity,
+            original_stock,
+        )
+
+    def test_staff_cannot_archive_product(
+        self,
+    ):
+
+        staff = User.objects.create_user(
+            username="productstaffarchive",
+            password="testpass123",
+        )
+
+        BusinessMember.objects.create(
+            business=self.business,
+            user=staff,
+            role=BusinessMember.ROLE_STAFF,
+            is_active=True,
+        )
+
+        self.client.force_login(
+            staff
+        )
+
+        response = self.client.post(
+            reverse(
+                "products:archive",
+                args=[
+                    self.product.pk,
+                ],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+        self.product.refresh_from_db()
+
+        self.assertTrue(
+            self.product.is_active
+        )
+
+    def test_staff_cannot_restore_product(
+        self,
+    ):
+
+        self.product.is_active = False
+
+        self.product.save(
+            update_fields=[
+                "is_active",
+            ]
+        )
+
+        staff = User.objects.create_user(
+            username="productstaffrestore",
+            password="testpass123",
+        )
+
+        BusinessMember.objects.create(
+            business=self.business,
+            user=staff,
+            role=BusinessMember.ROLE_STAFF,
+            is_active=True,
+        )
+
+        self.client.force_login(
+            staff
+        )
+
+        response = self.client.post(
+            reverse(
+                "products:restore",
+                args=[
+                    self.product.pk,
+                ],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+        self.product.refresh_from_db()
+
+        self.assertFalse(
+            self.product.is_active
+        )
+
+    def test_admin_can_adjust_stock(
+        self,
+    ):
+
+        admin = User.objects.create_user(
+            username="productadmin",
+            password="testpass123",
+        )
+
+        BusinessMember.objects.create(
+            business=self.business,
+            user=admin,
+            role=BusinessMember.ROLE_ADMIN,
+            is_active=True,
+        )
+
+        original_stock = (
+            self.product.stock_quantity
+        )
+
+        self.client.force_login(
+            admin
+        )
+
+        response = self.client.post(
+            reverse(
+                "products:stock_adjust",
+                args=[
+                    self.product.pk,
+                ],
+            ),
+            {
+                "adjustment_type":
+                    "restock",
+
+                "quantity":
+                    5,
+
+                "note":
+                    "Admin restock.",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        self.product.refresh_from_db()
+
+        self.assertEqual(
+            self.product.stock_quantity,
+            original_stock + 5,
+        )

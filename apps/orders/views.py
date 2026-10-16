@@ -88,6 +88,11 @@ from reportlab.platypus import (
 
 )
 
+from apps.businesses.permissions import (
+    can_manage_business,
+    management_required,
+)
+
 # =========================================================
 
 # ORDER STATUS TRANSITION RULES
@@ -948,39 +953,36 @@ def order_detail(request, pk):
     )
 
     return render(
-
         request,
-
         "orders/order_detail.html",
-
         {
-
-            "order": order,
-
-            "business": business,
-
+            "order":
+                order,
+    
+            "business":
+                business,
+    
             "status_choices":
-
-            status_choices,
-
+                status_choices,
+    
             "payment_form":
-
-            payment_form,
-
+                payment_form,
+    
             "refund_form":
-
-            refund_form,
-
+                refund_form,
+    
             "courier_settlement":
-
-            courier_settlement,
-
+                courier_settlement,
+    
             "courier_form":
-
-            courier_form,
-
+                courier_form,
+    
+            "can_manage_finance":
+                can_manage_business(
+                    request.user,
+                    business,
+                ),
         },
-
     )
 
 # =========================================================
@@ -4128,7 +4130,7 @@ def order_invoice_pdf(request, pk):
 # =========================================================
 
 @login_required
-
+@management_required
 @require_POST
 
 def order_payment_create(
@@ -4305,7 +4307,7 @@ def order_payment_create(
 # =========================================================
 
 @login_required
-
+@management_required
 @require_POST
 
 def order_refund_create(
@@ -4452,7 +4454,7 @@ def order_refund_create(
 # =========================================================
 
 @login_required
-
+@management_required
 @require_POST
 
 def order_courier_settlement(

@@ -349,3 +349,462 @@ class RefundAwareReportTests(TestCase):
             response.context["delivered_count"],
             1,
         )
+
+        # =========================================================
+    # REPORT ACCESS / EXPORT TESTS
+    # =========================================================
+
+    def test_staff_can_view_reports(
+        self,
+    ):
+
+        staff = User.objects.create_user(
+            username="reportstaff",
+            password="testpass123",
+        )
+
+        BusinessMember.objects.create(
+            user=staff,
+            business=self.business,
+            role=BusinessMember.ROLE_STAFF,
+            is_active=True,
+        )
+
+        self.client.force_login(
+            staff
+        )
+
+        response = self.client.get(
+            reverse(
+                "reports:dashboard"
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+
+    def test_staff_cannot_export_report_csv(
+        self,
+    ):
+
+        staff = User.objects.create_user(
+            username="reportstaffexport",
+            password="testpass123",
+        )
+
+        BusinessMember.objects.create(
+            user=staff,
+            business=self.business,
+            role=BusinessMember.ROLE_STAFF,
+            is_active=True,
+        )
+
+        self.client.force_login(
+            staff
+        )
+
+        response = self.client.get(
+            reverse(
+                "reports:export_csv"
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+
+    def test_owner_can_export_report_csv(
+        self,
+    ):
+
+        response = self.client.get(
+            reverse(
+                "reports:export_csv"
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertIn(
+            "text/csv",
+            response[
+                "Content-Type"
+            ],
+        )
+
+        self.assertIn(
+            "attachment",
+            response[
+                "Content-Disposition"
+            ],
+        )
+
+
+    def test_report_csv_excludes_other_business_orders(
+        self,
+    ):
+
+        response = self.client.get(
+            reverse(
+                "reports:export_csv"
+            )
+        )
+
+        content = (
+            response.content
+            .decode(
+                "utf-8-sig"
+            )
+        )
+
+        self.assertIn(
+            self.delivered_order.order_number,
+            content,
+        )
+
+        self.assertNotIn(
+            self.other_order.order_number,
+            content,
+        )
+
+
+    def test_report_date_filter_returns_selected_period(
+        self,
+    ):
+
+        order_date = (
+            self.delivered_order
+            .created_at
+            .date()
+            .isoformat()
+        )
+
+        response = self.client.get(
+            reverse(
+                "reports:dashboard"
+            ),
+            {
+                "date_from":
+                    order_date,
+
+                "date_to":
+                    order_date,
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertEqual(
+            response.context[
+                "date_from"
+            ],
+            order_date,
+        )
+
+        self.assertEqual(
+            response.context[
+                "date_to"
+            ],
+            order_date,
+        )
+
+        # =========================================================
+    # COURIER REPORT TESTS
+    # =========================================================
+
+    def test_report_courier_summary_is_tenant_scoped(
+        self,
+    ):
+
+        from apps.orders.models import (
+            CourierSettlement,
+        )
+
+        CourierSettlement.objects.create(
+            business=self.business,
+            order=self.delivered_order,
+            courier_charge=Decimal("80.00"),
+            return_charge=Decimal("20.00"),
+            cod_expected=Decimal("1100.00"),
+            cod_received=Decimal("900.00"),
+            settlement_status=(
+                CourierSettlement.STATUS_PARTIAL
+            ),
+        )
+
+        CourierSettlement.objects.create(
+            business=self.other_business,
+            order=self.other_order,
+            courier_charge=Decimal("500.00"),
+            return_charge=Decimal("100.00"),
+            cod_expected=Decimal("9000.00"),
+            cod_received=Decimal("8000.00"),
+            settlement_status=(
+                CourierSettlement.STATUS_PARTIAL
+            ),
+        )
+
+        response = self.client.get(
+            reverse(
+                "reports:dashboard"
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertEqual(
+            response.context[
+                "courier_total_expected"
+            ],
+            Decimal("1100.00"),
+        )
+
+        self.assertEqual(
+            response.context[
+                "courier_total_received"
+            ],
+            Decimal("900.00"),
+        )
+
+        self.assertEqual(
+            response.context[
+                "courier_charges"
+            ],
+            Decimal("80.00"),
+        )
+
+        self.assertEqual(
+            response.context[
+                "courier_return_charges"
+            ],
+            Decimal("20.00"),
+        )
+
+        self.assertEqual(
+            response.context[
+                "courier_outstanding"
+            ],
+            Decimal("200.00"),
+        )
+
+        self.assertEqual(
+            response.context[
+                "courier_net_expected"
+            ],
+            Decimal("1000.00"),
+        )
+
+        self.assertEqual(
+            response.context[
+                "courier_net_outstanding"
+            ],
+            Decimal("100.00"),
+        )
+
+
+    def test_report_invalid_dates_are_ignored(
+        self,
+    ):
+
+        response = self.client.get(
+            reverse(
+                "reports:dashboard"
+            ),
+            {
+                "date_from":
+                    "invalid-date",
+
+                "date_to":
+                    "not-a-date",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertEqual(
+            response.context[
+                "date_from"
+            ],
+            "",
+        )
+
+        self.assertEqual(
+            response.context[
+                "date_to"
+            ],
+            "",
+        )
+
+        self.assertEqual(
+            response.context[
+                "total_orders"
+            ],
+            3,
+        )
+
+
+    def test_report_date_from_after_date_to_returns_empty_period(
+        self,
+    ):
+
+        response = self.client.get(
+            reverse(
+                "reports:dashboard"
+            ),
+            {
+                "date_from":
+                    "2099-12-31",
+
+                "date_to":
+                    "2000-01-01",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertEqual(
+            response.context[
+                "total_orders"
+            ],
+            0,
+        )
+
+        # =========================================================
+    # REPORT CSV / DATE FILTER EDGE TESTS
+    # =========================================================
+
+    def test_admin_can_export_report_csv(
+        self,
+    ):
+
+        admin = User.objects.create_user(
+            username="reportadmin",
+            password="testpass123",
+        )
+
+        BusinessMember.objects.create(
+            user=admin,
+            business=self.business,
+            role=BusinessMember.ROLE_ADMIN,
+            is_active=True,
+        )
+
+        self.client.force_login(
+            admin
+        )
+
+        response = self.client.get(
+            reverse(
+                "reports:export_csv"
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertIn(
+            "text/csv",
+            response[
+                "Content-Type"
+            ],
+        )
+
+
+    def test_report_csv_respects_date_filter(
+        self,
+    ):
+
+        order_date = (
+            self.delivered_order
+            .created_at
+            .date()
+            .isoformat()
+        )
+
+        response = self.client.get(
+            reverse(
+                "reports:export_csv"
+            ),
+            {
+                "date_from":
+                    order_date,
+
+                "date_to":
+                    order_date,
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        content = (
+            response.content
+            .decode(
+                "utf-8-sig"
+            )
+        )
+
+        self.assertIn(
+            self.delivered_order.order_number,
+            content,
+        )
+
+
+    def test_report_dashboard_requires_login(
+        self,
+    ):
+
+        self.client.logout()
+
+        response = self.client.get(
+            reverse(
+                "reports:dashboard"
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+
+    def test_report_export_requires_login(
+        self,
+    ):
+
+        self.client.logout()
+
+        response = self.client.get(
+            reverse(
+                "reports:export_csv"
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )

@@ -2985,3 +2985,396 @@ class OrderInventoryTests(TestCase):
             "page=",
             filter_query,
         )
+
+        # =========================================================
+    # ORDER FINANCIAL PERMISSION TESTS
+    # =========================================================
+
+    def test_staff_cannot_record_payment(
+        self,
+    ):
+
+        staff = User.objects.create_user(
+            username="orderstaffpayment",
+            password="testpass123",
+        )
+
+        BusinessMember.objects.create(
+            business=self.business,
+            user=staff,
+            role=BusinessMember.ROLE_STAFF,
+            is_active=True,
+        )
+
+        self.client.force_login(
+            staff
+        )
+
+        response = self.client.post(
+            reverse(
+                "orders:payment_create",
+                args=[
+                    self.order.pk,
+                ],
+            ),
+            {
+                "amount": "100.00",
+                "payment_method": Order.PAYMENT_COD,
+                "reference": "",
+                "note": "Staff payment attempt.",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+        self.order.refresh_from_db()
+
+        self.assertEqual(
+            self.order.paid_amount,
+            Decimal("0.00"),
+        )
+
+        self.assertFalse(
+            OrderPayment.objects.filter(
+                order=self.order,
+            ).exists()
+        )
+
+
+    def test_staff_cannot_record_refund(
+        self,
+    ):
+
+        self.order.paid_amount = Decimal(
+            "500.00"
+        )
+
+        self.order.payment_status = (
+            Order.PAYMENT_PARTIAL
+        )
+
+        self.order.save(
+            update_fields=[
+                "paid_amount",
+                "payment_status",
+                "updated_at",
+            ]
+        )
+
+        staff = User.objects.create_user(
+            username="orderstaffrefund",
+            password="testpass123",
+        )
+
+        BusinessMember.objects.create(
+            business=self.business,
+            user=staff,
+            role=BusinessMember.ROLE_STAFF,
+            is_active=True,
+        )
+
+        self.client.force_login(
+            staff
+        )
+
+        response = self.client.post(
+            reverse(
+                "orders:refund_create",
+                args=[
+                    self.order.pk,
+                ],
+            ),
+            {
+                "amount": "100.00",
+                "refund_method": Order.PAYMENT_COD,
+                "reference": "",
+                "note": "Staff refund attempt.",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+        self.order.refresh_from_db()
+
+        self.assertEqual(
+            self.order.refunded_amount,
+            Decimal("0.00"),
+        )
+
+        self.assertFalse(
+            OrderRefund.objects.filter(
+                order=self.order,
+            ).exists()
+        )
+
+
+    def test_staff_cannot_save_courier_settlement(
+        self,
+    ):
+
+        staff = User.objects.create_user(
+            username="orderstaffcourier",
+            password="testpass123",
+        )
+
+        BusinessMember.objects.create(
+            business=self.business,
+            user=staff,
+            role=BusinessMember.ROLE_STAFF,
+            is_active=True,
+        )
+
+        self.client.force_login(
+            staff
+        )
+
+        response = self.client.post(
+            reverse(
+                "orders:courier_settlement",
+                args=[
+                    self.order.pk,
+                ],
+            ),
+            {
+                "courier_name": "Pathao",
+                "tracking_number": "TRK-001",
+                "courier_charge": "80.00",
+                "return_charge": "0.00",
+                "cod_expected": "1000.00",
+                "cod_received": "900.00",
+                "reference": "",
+                "note": "Staff attempt.",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            403,
+        )
+
+
+    def test_admin_can_record_payment(
+        self,
+    ):
+
+        admin = User.objects.create_user(
+            username="orderadminpayment",
+            password="testpass123",
+        )
+
+        BusinessMember.objects.create(
+            business=self.business,
+            user=admin,
+            role=BusinessMember.ROLE_ADMIN,
+            is_active=True,
+        )
+
+        self.client.force_login(
+            admin
+        )
+
+        response = self.client.post(
+            reverse(
+                "orders:payment_create",
+                args=[
+                    self.order.pk,
+                ],
+            ),
+            {
+                "amount": "100.00",
+                "payment_method": Order.PAYMENT_COD,
+                "reference": "ADMIN-PAY",
+                "note": "Admin payment.",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        self.order.refresh_from_db()
+
+        self.assertEqual(
+            self.order.paid_amount,
+            Decimal("100.00"),
+        )
+
+        self.assertTrue(
+            OrderPayment.objects.filter(
+                order=self.order,
+            ).exists()
+        )
+
+
+    def test_staff_can_update_order_status(
+        self,
+    ):
+
+        staff = User.objects.create_user(
+            username="orderstaffstatus",
+            password="testpass123",
+        )
+
+        BusinessMember.objects.create(
+            business=self.business,
+            user=staff,
+            role=BusinessMember.ROLE_STAFF,
+            is_active=True,
+        )
+
+        self.client.force_login(
+            staff
+        )
+
+        response = self.client.post(
+            reverse(
+                "orders:status_update",
+                args=[
+                    self.order.pk,
+                ],
+            ),
+            {
+                "status":
+                    Order.STATUS_CONFIRMED,
+
+                "note":
+                    "Operational update by staff.",
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            302,
+        )
+
+        self.order.refresh_from_db()
+
+        self.assertEqual(
+            self.order.status,
+            Order.STATUS_CONFIRMED,
+        )
+
+        # =========================================================
+    # INVOICE PERMISSION TESTS
+    # =========================================================
+
+    def test_staff_can_view_invoice(
+        self,
+    ):
+
+        staff = User.objects.create_user(
+            username="orderstaffinvoice",
+            password="testpass123",
+        )
+
+        BusinessMember.objects.create(
+            business=self.business,
+            user=staff,
+            role=BusinessMember.ROLE_STAFF,
+            is_active=True,
+        )
+
+        self.client.force_login(
+            staff
+        )
+
+        response = self.client.get(
+            reverse(
+                "orders:invoice",
+                args=[
+                    self.order.pk,
+                ],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+
+    def test_staff_can_download_invoice_pdf(
+        self,
+    ):
+
+        staff = User.objects.create_user(
+            username="orderstaffinvoicepdf",
+            password="testpass123",
+        )
+
+        BusinessMember.objects.create(
+            business=self.business,
+            user=staff,
+            role=BusinessMember.ROLE_STAFF,
+            is_active=True,
+        )
+
+        self.client.force_login(
+            staff
+        )
+
+        response = self.client.get(
+            reverse(
+                "orders:invoice_pdf",
+                args=[
+                    self.order.pk,
+                ],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertEqual(
+            response[
+                "Content-Type"
+            ],
+            "application/pdf",
+        )
+
+
+    def test_user_cannot_view_other_business_invoice(
+        self,
+    ):
+
+        response = self.client.get(
+            reverse(
+                "orders:invoice",
+                args=[
+                    self.other_order.pk,
+                ],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            404,
+        )
+
+
+    def test_user_cannot_download_other_business_invoice_pdf(
+        self,
+    ):
+
+        response = self.client.get(
+            reverse(
+                "orders:invoice_pdf",
+                args=[
+                    self.other_order.pk,
+                ],
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            404,
+        )

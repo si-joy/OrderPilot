@@ -15,6 +15,11 @@ from apps.orders.models import Order
 from .forms import CustomerForm
 from .models import Customer
 
+from apps.businesses.permissions import (
+    can_manage_business,
+    management_required,
+)
+
 
 # =========================================================
 # CUSTOMER LIST
@@ -423,6 +428,12 @@ def customer_detail(
 
         "is_repeat_customer":
             is_repeat_customer,
+
+        "can_manage_customer":
+            can_manage_business(
+                request.user,
+                business,
+            ),
     }
 
     return render(
@@ -588,6 +599,7 @@ def customer_update(
 # =========================================================
 
 @login_required
+@management_required
 @require_POST
 def customer_archive(
     request,
@@ -632,6 +644,7 @@ def customer_archive(
 # =========================================================
 
 @login_required
+@management_required
 @require_POST
 def customer_restore(
     request,

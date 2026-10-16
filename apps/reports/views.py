@@ -19,7 +19,13 @@ from apps.orders.models import (
     OrderItem,
 )
 from apps.products.models import Product
+import csv
 
+from django.http import HttpResponse
+from apps.businesses.permissions import (
+    can_manage_business,
+    management_required,
+)
 
 # =========================================================
 # REPORT DASHBOARD
@@ -788,6 +794,12 @@ def report_dashboard(request):
 
         "courier_total_count":
             courier_total_count,
+
+        "can_export_reports":
+            can_manage_business(
+                request.user,
+                business,
+            ),
     }
 
     return render(
@@ -795,3 +807,145 @@ def report_dashboard(request):
         "reports/report_dashboard.html",
         context,
     )
+
+
+@login_required
+@management_required
+def report_export_csv(request):
+
+    business = get_current_business(
+        request.user
+    )
+
+    date_from = (
+        request.GET
+        .get(
+            "date_from",
+            "",
+        )
+        .strip()
+    )
+
+    date_to = (
+        request.GET
+        .get(
+            "date_to",
+            "",
+        )
+        .strip()
+    )
+
+    parsed_from = None
+    parsed_to = None
+
+    if date_from:
+
+        try:
+            parsed_from = datetime.strptime(
+                date_from,
+                "%Y-%m-%d",
+            ).date()
+
+        except ValueError:
+            parsed_from = None
+
+    if date_to:
+
+        try:
+            parsed_to = datetime.strptime(
+                date_to,
+                "%Y-%m-%d",
+            ).date()
+
+        except ValueError:
+            parsed_to = None
+
+    orders = (
+        Order.objects
+        .filter(
+            business=business,
+        )
+        .select_related(
+            "customer",
+        )
+        .order_by(
+            "-created_at",
+        )
+    )
+
+    if parsed_from:
+
+        orders = orders.filter(
+            created_at__date__gte=(
+                parsed_from
+            )
+        )
+
+    if parsed_to:
+
+        orders = orders.filter(
+            created_at__date__lte=(
+                parsed_to
+            )
+        )
+
+    response = HttpResponse(
+        content_type=(
+            "text/csv; charset=utf-8"
+        )
+    )
+
+    response[
+        "Content-Disposition"
+    ] = (
+        'attachment; '
+        'filename="orderpilot-report.csv"'
+    )
+
+    response.write(
+        "\ufeff"
+    )
+
+    writer = csv.writer(
+        response
+    )
+
+    writer.writerow(
+        [
+            "Order Number",
+            "Customer",
+            "Phone",
+            "Status",
+            "Payment Status",
+            "Total",
+            "Gross Paid",
+            "Refunded",
+            "Net Paid",
+            "Due",
+            "Created Date",
+        ]
+    )
+
+    for order in orders:
+
+        writer.writerow(
+            [
+                order.order_number,
+                order.customer.full_name,
+                order.customer.phone,
+                order.get_status_display(),
+                order.get_payment_status_display(),
+                order.total_amount,
+                order.paid_amount,
+                order.refunded_amount,
+                order.net_paid_amount,
+                order.due_amount,
+                order.created_at.strftime(
+                    "%Y-%m-%d %H:%M"
+                ),
+            ]
+        )
+
+    return response
+
+    

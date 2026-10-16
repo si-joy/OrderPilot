@@ -1,5 +1,5 @@
 from django.contrib.auth import views as auth_views
-from django.urls import path
+from django.urls import path, reverse_lazy
 
 from . import views
 from .forms import (
@@ -48,7 +48,9 @@ urlpatterns = [
         auth_views.PasswordChangeView.as_view(
             template_name="auth/password_change.html",
             form_class=OrderPilotPasswordChangeForm,
-            success_url="/profile/",
+            success_url=reverse_lazy(
+                "core:profile"
+            ),
         ),
         name="password_change",
     ),
@@ -60,7 +62,9 @@ urlpatterns = [
             form_class=OrderPilotPasswordResetForm,
             email_template_name="auth/password_reset_email.txt",
             subject_template_name="auth/password_reset_subject.txt",
-            success_url="/password/reset/done/",
+            success_url=reverse_lazy(
+                "core:password_reset_done"
+            ),
         ),
         name="password_reset",
     ),
@@ -78,7 +82,9 @@ urlpatterns = [
         auth_views.PasswordResetConfirmView.as_view(
             template_name="auth/password_reset_confirm.html",
             form_class=OrderPilotSetPasswordForm,
-            success_url="/password/reset/complete/",
+            success_url=reverse_lazy(
+                "core:password_reset_complete"
+            ),
         ),
         name="password_reset_confirm",
     ),
@@ -96,4 +102,5 @@ urlpatterns = [
         views.components_demo,
         name="components_demo",
     ),
+    
 ]

@@ -65,42 +65,46 @@ Customer profile, order history and refund-aware account summary.
         </a>
 
 
-        {% if customer.is_active %}
+        {% if can_manage_customer %}
 
-            <form
-                method="post"
-                action="{% url 'customers:archive' customer.pk %}"
-                onsubmit="return confirm('Archive this customer?');"
-            >
+            {% if customer.is_active %}
 
-                {% csrf_token %}
-
-                <button
-                    type="submit"
-                    class="btn btn-danger"
+                <form
+                    method="post"
+                    action="{% url 'customers:archive' customer.pk %}"
+                    onsubmit="return confirm('Archive this customer?');"
                 >
-                    Archive
-                </button>
 
-            </form>
+                    {% csrf_token %}
 
-        {% else %}
+                    <button
+                        type="submit"
+                        class="btn btn-danger"
+                    >
+                        Archive
+                    </button>
 
-            <form
-                method="post"
-                action="{% url 'customers:restore' customer.pk %}"
-            >
+                </form>
 
-                {% csrf_token %}
+            {% else %}
 
-                <button
-                    type="submit"
-                    class="btn btn-primary"
+                <form
+                    method="post"
+                    action="{% url 'customers:restore' customer.pk %}"
                 >
-                    Restore Customer
-                </button>
 
-            </form>
+                    {% csrf_token %}
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        Restore Customer
+                    </button>
+
+                </form>
+
+            {% endif %}
 
         {% endif %}
 

@@ -563,6 +563,17 @@ Sales, payments, courier settlements and business performance overview.
                     Reset
                 </a>
 
+                {% if can_export_reports %}
+
+                    <a
+                        href="{% url 'reports:export_csv' %}?date_from={{ date_from }}&date_to={{ date_to }}"
+                        class="btn btn-secondary"
+                    >
+                        Export CSV
+                    </a>
+                
+                {% endif %}
+
             </div>
 
         </form>
