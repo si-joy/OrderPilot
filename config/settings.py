@@ -462,3 +462,60 @@ if IS_VERCEL:
     SECURE_HSTS_SECONDS = 3600
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = False
+
+# =========================================================
+# LOGGING
+# =========================================================
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+
+    "formatters": {
+        "standard": {
+            "format": (
+                "[{levelname}] "
+                "{asctime} "
+                "{name}: "
+                "{message}"
+            ),
+            "style": "{",
+        },
+    },
+
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+        },
+    },
+
+    "root": {
+        "handlers": [
+            "console",
+        ],
+        "level": (
+            "INFO"
+            if not DEBUG
+            else "WARNING"
+        ),
+    },
+
+    "loggers": {
+        "django.request": {
+            "handlers": [
+                "console",
+            ],
+            "level": "ERROR",
+            "propagate": False,
+        },
+
+        "django.security": {
+            "handlers": [
+                "console",
+            ],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}

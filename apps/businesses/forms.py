@@ -1,9 +1,11 @@
 from django import forms
-from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.contrib.auth import (
+    get_user_model,
+)
 
 from .models import (
     Business,
+    BusinessInvitation,
     BusinessMember,
 )
 
@@ -15,9 +17,12 @@ User = get_user_model()
 # BUSINESS SETTINGS
 # =========================================================
 
-class BusinessSettingsForm(forms.ModelForm):
+class BusinessSettingsForm(
+    forms.ModelForm,
+):
 
     class Meta:
+
         model = Business
 
         fields = [
@@ -34,138 +39,235 @@ class BusinessSettingsForm(forms.ModelForm):
         ]
 
         widgets = {
-            "name": forms.TextInput(
-                attrs={
-                    "class": "form-control",
-                    "placeholder": "Business name",
-                }
-            ),
 
-            "logo": forms.FileInput(
-                attrs={
-                    "class": "business-logo-input",
-                    "accept": (
-                        "image/png,"
-                        "image/jpeg,"
-                        "image/webp"
-                    ),
-                }
-            ),
+            "name":
+                forms.TextInput(
+                    attrs={
+                        "class":
+                            "form-control",
 
-            "phone": forms.TextInput(
-                attrs={
-                    "class": "form-control",
-                    "placeholder": "Business phone",
-                }
-            ),
+                        "placeholder":
+                            "Business name",
+                    }
+                ),
 
-            "email": forms.EmailInput(
-                attrs={
-                    "class": "form-control",
-                    "placeholder": "Business email",
-                }
-            ),
+            "logo":
+                forms.FileInput(
+                    attrs={
+                        "class":
+                            "business-logo-input",
 
-            "address": forms.Textarea(
-                attrs={
-                    "class": "form-control",
-                    "rows": 3,
-                    "placeholder": "Business address",
-                }
-            ),
+                        "accept":
+                            (
+                                "image/png,"
+                                "image/jpeg,"
+                                "image/webp"
+                            ),
+                    }
+                ),
 
-            "currency": forms.TextInput(
-                attrs={
-                    "class": "form-control",
-                    "placeholder": "BDT",
-                }
-            ),
+            "phone":
+                forms.TextInput(
+                    attrs={
+                        "class":
+                            "form-control",
 
-            "default_low_stock_threshold": forms.NumberInput(
-                attrs={
-                    "class": "form-control",
-                    "min": 0,
-                }
-            ),
+                        "placeholder":
+                            "Business phone",
+                    }
+                ),
 
-            "order_prefix": forms.TextInput(
-                attrs={
-                    "class": "form-control",
-                    "placeholder": "ORD",
-                }
-            ),
+            "email":
+                forms.EmailInput(
+                    attrs={
+                        "class":
+                            "form-control",
 
-            "default_delivery_charge": forms.NumberInput(
-                attrs={
-                    "class": "form-control",
-                    "min": 0,
-                    "step": "0.01",
-                }
-            ),
+                        "placeholder":
+                            "Business email",
+                    }
+                ),
 
-            "invoice_note": forms.Textarea(
-                attrs={
-                    "class": "form-control",
-                    "rows": 4,
-                    "placeholder": (
-                        "Thank you for your order."
-                    ),
-                }
-            ),
+            "address":
+                forms.Textarea(
+                    attrs={
+                        "class":
+                            "form-control",
+
+                        "rows":
+                            3,
+
+                        "placeholder":
+                            "Business address",
+                    }
+                ),
+
+            "currency":
+                forms.TextInput(
+                    attrs={
+                        "class":
+                            "form-control",
+
+                        "placeholder":
+                            "BDT",
+                    }
+                ),
+
+            "default_low_stock_threshold":
+                forms.NumberInput(
+                    attrs={
+                        "class":
+                            "form-control",
+
+                        "min":
+                            0,
+                    }
+                ),
+
+            "order_prefix":
+                forms.TextInput(
+                    attrs={
+                        "class":
+                            "form-control",
+
+                        "placeholder":
+                            "ORD",
+                    }
+                ),
+
+            "default_delivery_charge":
+                forms.NumberInput(
+                    attrs={
+                        "class":
+                            "form-control",
+
+                        "min":
+                            0,
+
+                        "step":
+                            "0.01",
+                    }
+                ),
+
+            "invoice_note":
+                forms.Textarea(
+                    attrs={
+                        "class":
+                            "form-control",
+
+                        "rows":
+                            4,
+
+                        "placeholder":
+                            (
+                                "Thank you "
+                                "for your order."
+                            ),
+                    }
+                ),
         }
 
-    def clean_name(self):
+    def clean_name(
+        self,
+    ):
+
         return (
-            self.cleaned_data["name"]
+            self.cleaned_data[
+                "name"
+            ]
             .strip()
         )
 
-    def clean_phone(self):
+    def clean_phone(
+        self,
+    ):
+
         return (
             self.cleaned_data
-            .get("phone", "")
+            .get(
+                "phone",
+                "",
+            )
             .strip()
         )
 
-    def clean_email(self):
+    def clean_email(
+        self,
+    ):
+
         return (
             self.cleaned_data
-            .get("email", "")
+            .get(
+                "email",
+                "",
+            )
             .strip()
             .lower()
         )
 
-    def clean_currency(self):
+    def clean_currency(
+        self,
+    ):
+
         currency = (
             self.cleaned_data
-            .get("currency", "BDT")
+            .get(
+                "currency",
+                "BDT",
+            )
             .strip()
             .upper()
         )
 
-        return currency or "BDT"
+        return (
+            currency
+            or
+            "BDT"
+        )
 
-    def clean_order_prefix(self):
+    def clean_order_prefix(
+        self,
+    ):
+
         prefix = (
             self.cleaned_data
-            .get("order_prefix", "")
+            .get(
+                "order_prefix",
+                "",
+            )
             .strip()
             .upper()
         )
 
-        return prefix or "ORD"
+        return (
+            prefix
+            or
+            "ORD"
+        )
 
-    def clean_logo(self):
-        logo = self.cleaned_data.get(
-            "logo"
+    def clean_logo(
+        self,
+    ):
+
+        logo = (
+            self.cleaned_data
+            .get(
+                "logo"
+            )
         )
 
         if not logo:
+
             return logo
 
         # Existing ImageField object
         # does not need upload validation.
-        if not hasattr(logo, "size"):
+
+        if not hasattr(
+            logo,
+            "size",
+        ):
+
             return logo
 
         max_size = (
@@ -174,10 +276,16 @@ class BusinessSettingsForm(forms.ModelForm):
             * 1024
         )
 
-        if logo.size > max_size:
+        if (
+            logo.size
+            > max_size
+        ):
+
             raise forms.ValidationError(
-                "Business logo must be smaller "
-                "than 2 MB."
+                (
+                    "Business logo must "
+                    "be smaller than 2 MB."
+                )
             )
 
         content_type = getattr(
@@ -195,30 +303,41 @@ class BusinessSettingsForm(forms.ModelForm):
         if (
             content_type
             and
-            content_type not in allowed_types
+            content_type
+            not in allowed_types
         ):
+
             raise forms.ValidationError(
-                "Please upload a JPG, PNG, "
-                "or WebP image."
+                (
+                    "Please upload a JPG, "
+                    "PNG, or WebP image."
+                )
             )
 
         return logo
 
 
 # =========================================================
-# ADD TEAM MEMBER
+# ADD / INVITE TEAM MEMBER
 # =========================================================
 
-class TeamMemberAddForm(forms.Form):
-    user_identifier = forms.CharField(
-        label="Username or Email",
+class TeamMemberAddForm(
+    forms.Form,
+):
+
+    email = forms.EmailField(
+        label="Email Address",
         max_length=254,
-        widget=forms.TextInput(
+        widget=forms.EmailInput(
             attrs={
-                "class": "form-control",
-                "placeholder": (
-                    "Enter username or email"
-                ),
+                "class":
+                    "form-control",
+
+                "placeholder":
+                    "team@example.com",
+
+                "autocomplete":
+                    "email",
             }
         ),
     )
@@ -226,17 +345,20 @@ class TeamMemberAddForm(forms.Form):
     role = forms.ChoiceField(
         choices=[
             (
-                BusinessMember.ROLE_ADMIN,
+                BusinessMember
+                .ROLE_ADMIN,
                 "Admin",
             ),
             (
-                BusinessMember.ROLE_STAFF,
+                BusinessMember
+                .ROLE_STAFF,
                 "Staff",
             ),
         ],
         widget=forms.Select(
             attrs={
-                "class": "form-control",
+                "class":
+                    "form-control",
             }
         ),
     )
@@ -248,118 +370,183 @@ class TeamMemberAddForm(forms.Form):
         current_membership=None,
         **kwargs,
     ):
+
         super().__init__(
             *args,
             **kwargs,
         )
 
         self.business = business
+
         self.current_membership = (
             current_membership
         )
+
+        self.existing_user = None
 
         if (
             current_membership
             and
             current_membership.role
-            == BusinessMember.ROLE_ADMIN
+            == BusinessMember
+            .ROLE_ADMIN
         ):
+
             self.fields[
                 "role"
             ].choices = [
                 (
-                    BusinessMember.ROLE_STAFF,
+                    BusinessMember
+                    .ROLE_STAFF,
                     "Staff",
                 ),
             ]
 
-    def clean_user_identifier(self):
-        value = (
+    def clean_email(
+        self,
+    ):
+
+        email = (
             self.cleaned_data[
-                "user_identifier"
+                "email"
             ]
             .strip()
+            .lower()
         )
 
         user = (
             User.objects
             .filter(
-                Q(
-                    username__iexact=value
-                )
-                |
-                Q(
-                    email__iexact=value
-                )
+                email__iexact=email
             )
             .first()
         )
 
-        if not user:
-            raise forms.ValidationError(
-                "No OrderPilot account was "
-                "found with that username "
-                "or email."
-            )
+        if user:
 
-        if not user.is_active:
-            raise forms.ValidationError(
-                "This user account is inactive."
-            )
+            if not user.is_active:
 
-        existing = (
-            BusinessMember.objects
-            .filter(
-                business=self.business,
-                user=user,
-            )
-            .first()
-        )
-
-        if existing:
-            if existing.is_active:
                 raise forms.ValidationError(
-                    "This user is already an "
-                    "active member of this "
-                    "business."
+                    (
+                        "This OrderPilot "
+                        "account is inactive."
+                    )
                 )
 
-            raise forms.ValidationError(
-                "This member already exists "
-                "but is inactive. Restore the "
-                "member instead."
+            existing_member = (
+                BusinessMember.objects
+                .filter(
+                    business=(
+                        self.business
+                    ),
+                    user=user,
+                )
+                .first()
             )
 
-        self.cleaned_user = user
+            if existing_member:
 
-        return value
+                if (
+                    existing_member
+                    .is_active
+                ):
 
-    def clean_role(self):
-        role = self.cleaned_data[
-            "role"
-        ]
+                    raise forms.ValidationError(
+                        (
+                            "This user is already "
+                            "an active member of "
+                            "the team."
+                        )
+                    )
+
+                raise forms.ValidationError(
+                    (
+                        "This user already belongs "
+                        "to this team but is "
+                        "inactive. Restore the "
+                        "member instead."
+                    )
+                )
+
+        existing_invitation = (
+            BusinessInvitation.objects
+            .filter(
+                business=(
+                    self.business
+                ),
+                email__iexact=email,
+                status=(
+                    BusinessInvitation
+                    .STATUS_PENDING
+                ),
+            )
+            .order_by(
+                "-created_at"
+            )
+            .first()
+        )
+
+        if existing_invitation:
+
+            if (
+                existing_invitation
+                .is_pending
+            ):
+
+                raise forms.ValidationError(
+                    (
+                        "A pending invitation "
+                        "has already been sent "
+                        "to this email."
+                    )
+                )
+
+            existing_invitation \
+                .mark_expired_if_needed()
+
+        self.existing_user = (
+            user
+        )
+
+        return email
+
+    def clean_role(
+        self,
+    ):
+
+        role = (
+            self.cleaned_data[
+                "role"
+            ]
+        )
 
         if (
             self.current_membership
             and
             self.current_membership.role
-            == BusinessMember.ROLE_ADMIN
+            == BusinessMember
+            .ROLE_ADMIN
             and
             role
-            != BusinessMember.ROLE_STAFF
+            != BusinessMember
+            .ROLE_STAFF
         ):
+
             raise forms.ValidationError(
-                "Admins can only add Staff "
-                "members."
+                (
+                    "Admins can only invite "
+                    "Staff members."
+                )
             )
 
         return role
 
-    def get_user(self):
-        return getattr(
-            self,
-            "cleaned_user",
-            None,
+    def get_existing_user(
+        self,
+    ):
+
+        return (
+            self.existing_user
         )
 
 
@@ -367,21 +554,27 @@ class TeamMemberAddForm(forms.Form):
 # TEAM MEMBER ROLE UPDATE
 # =========================================================
 
-class TeamMemberRoleForm(forms.Form):
+class TeamMemberRoleForm(
+    forms.Form,
+):
+
     role = forms.ChoiceField(
         choices=[
             (
-                BusinessMember.ROLE_ADMIN,
+                BusinessMember
+                .ROLE_ADMIN,
                 "Admin",
             ),
             (
-                BusinessMember.ROLE_STAFF,
+                BusinessMember
+                .ROLE_STAFF,
                 "Staff",
             ),
         ],
         widget=forms.Select(
             attrs={
-                "class": "form-control",
+                "class":
+                    "form-control",
             }
         ),
     )

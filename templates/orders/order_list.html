@@ -15,6 +15,141 @@ Search, filter and manage customer orders.
 
 {% block content %}
 
+<style>
+
+.order-date-input {
+    position: relative;
+}
+
+.order-date-input .form-control {
+    width: 100%;
+    padding-right: 46px;
+}
+
+.order-date-icon {
+    position: absolute;
+
+    top: 50%;
+    right: 14px;
+
+    width: 30px;
+    height: 30px;
+
+    padding: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    transform: translateY(-50%);
+
+    border: 0;
+    background: transparent;
+
+    color: var(--text-secondary);
+
+    cursor: pointer;
+}
+
+.order-date-icon:hover {
+    color: var(--primary);
+}
+
+.order-date-icon svg {
+    width: 18px;
+    height: 18px;
+
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+
+    pointer-events: none;
+}
+
+.order-date-picker {
+    cursor: pointer;
+}
+
+
+/* =====================================================
+   FLATPICKR THEME
+===================================================== */
+
+.flatpickr-calendar {
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+
+    background: var(--surface) !important;
+    color: var(--text-primary) !important;
+
+    box-shadow:
+        0 16px 40px rgba(0, 0, 0, 0.18) !important;
+}
+
+.flatpickr-months .flatpickr-month,
+.flatpickr-current-month,
+.flatpickr-weekdays,
+span.flatpickr-weekday {
+    background: var(--surface) !important;
+    color: var(--text-primary) !important;
+}
+
+.flatpickr-current-month input.cur-year,
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+    color: var(--text-primary) !important;
+}
+
+.flatpickr-day {
+    color: var(--text-primary) !important;
+}
+
+.flatpickr-day:hover {
+    border-color: var(--border) !important;
+    background: var(--surface-secondary) !important;
+}
+
+.flatpickr-day.today {
+    border-color: var(--primary) !important;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+    border-color: var(--primary) !important;
+    background: var(--primary) !important;
+    color: #ffffff !important;
+}
+
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay {
+    color: var(--text-muted) !important;
+}
+
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month {
+    color: var(--text-secondary) !important;
+    fill: var(--text-secondary) !important;
+}
+
+.flatpickr-months .flatpickr-prev-month:hover,
+.flatpickr-months .flatpickr-next-month:hover {
+    color: var(--primary) !important;
+    fill: var(--primary) !important;
+}
+
+</style>
+
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+>
+
+<script
+    src="https://cdn.jsdelivr.net/npm/flatpickr"
+></script>
+
 {% if messages %}
 
     {% for message in messages %}
@@ -203,15 +338,37 @@ Search, filter and manage customer orders.
                     >
                         From Date
                     </label>
-
-                    <input
-                        type="date"
-                        id="date-from"
-                        name="date_from"
-                        value="{{ date_from }}"
-                        class="form-control"
-                    >
-
+                
+                    <div class="order-date-input">
+                    
+                        <input
+                            type="text"
+                            id="date-from"
+                            name="date_from"
+                            value="{{ date_from }}"
+                            class="form-control order-date-picker"
+                            placeholder="Select start date"
+                            autocomplete="off"
+                        >
+                    
+                        <button
+                            type="button"
+                            class="order-date-icon"
+                            data-datepicker-target="date-from"
+                            aria-label="Open start date calendar"
+                        >
+                            <svg
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    d="M7 2v3M17 2v3M3.5 9h17M5.5 4.5h13a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2Z"
+                                />
+                            </svg>
+                        </button>
+                    
+                    </div>
+                
                 </div>
 
 
@@ -225,15 +382,37 @@ Search, filter and manage customer orders.
                     >
                         To Date
                     </label>
-
-                    <input
-                        type="date"
-                        id="date-to"
-                        name="date_to"
-                        value="{{ date_to }}"
-                        class="form-control"
-                    >
-
+                
+                    <div class="order-date-input">
+                    
+                        <input
+                            type="text"
+                            id="date-to"
+                            name="date_to"
+                            value="{{ date_to }}"
+                            class="form-control order-date-picker"
+                            placeholder="Select end date"
+                            autocomplete="off"
+                        >
+                    
+                        <button
+                            type="button"
+                            class="order-date-icon"
+                            data-datepicker-target="date-to"
+                            aria-label="Open end date calendar"
+                        >
+                            <svg
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    d="M7 2v3M17 2v3M3.5 9h17M5.5 4.5h13a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2Z"
+                                />
+                            </svg>
+                        </button>
+                    
+                    </div>
+                
                 </div>
 
             </div>
@@ -671,5 +850,163 @@ Search, filter and manage customer orders.
     </section>
 
 {% endif %}
+
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const sharedOptions = {
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d/m/Y",
+            allowInput: false,
+            disableMobile: true,
+            clickOpens: true,
+            monthSelectorType: "dropdown",
+        };
+
+
+        let toPicker = null;
+
+
+        const fromPicker = flatpickr(
+            "#date-from",
+            {
+                ...sharedOptions,
+
+                onChange: function (
+                    selectedDates
+                ) {
+
+                    if (
+                        selectedDates.length
+                        && toPicker
+                    ) {
+
+                        toPicker.set(
+                            "minDate",
+                            selectedDates[0]
+                        );
+
+                    }
+
+                },
+            }
+        );
+
+
+        toPicker = flatpickr(
+            "#date-to",
+            {
+                ...sharedOptions,
+
+                onChange: function (
+                    selectedDates
+                ) {
+
+                    if (
+                        selectedDates.length
+                        && fromPicker
+                    ) {
+
+                        fromPicker.set(
+                            "maxDate",
+                            selectedDates[0]
+                        );
+
+                    }
+
+                },
+            }
+        );
+
+
+        document
+            .querySelectorAll(
+                "[data-datepicker-target]"
+            )
+            .forEach(
+                function (button) {
+
+                    button.addEventListener(
+                        "click",
+                        function () {
+
+                            const target =
+                                button.dataset.datepickerTarget;
+
+                            if (
+                                target === "date-from"
+                            ) {
+                                fromPicker.open();
+                            }
+
+                            if (
+                                target === "date-to"
+                            ) {
+                                toPicker.open();
+                            }
+
+                        }
+                    );
+
+                }
+            );
+
+
+        if (fromPicker.altInput) {
+
+            fromPicker.altInput.addEventListener(
+                "click",
+                function () {
+                    fromPicker.open();
+                }
+            );
+
+        }
+
+
+        if (toPicker.altInput) {
+
+            toPicker.altInput.addEventListener(
+                "click",
+                function () {
+                    toPicker.open();
+                }
+            );
+
+        }
+
+
+        if (
+            fromPicker.selectedDates.length
+        ) {
+
+            toPicker.set(
+                "minDate",
+                fromPicker.selectedDates[0]
+            );
+
+        }
+
+
+        if (
+            toPicker.selectedDates.length
+        ) {
+
+            fromPicker.set(
+                "maxDate",
+                toPicker.selectedDates[0]
+            );
+
+        }
+
+    }
+);
+
+</script>
 
 {% endblock %}

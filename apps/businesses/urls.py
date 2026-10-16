@@ -7,6 +7,7 @@ app_name = "businesses"
 
 
 urlpatterns = [
+
     path(
         "settings/",
         views.business_settings,
@@ -23,6 +24,18 @@ urlpatterns = [
         "team/add/",
         views.team_member_add,
         name="team_add",
+    ),
+
+    path(
+        "team/invite/<uuid:token>/accept/",
+        views.team_invite_accept,
+        name="team_invite_accept",
+    ),
+
+    path(
+        "team/invite/<int:pk>/cancel/",
+        views.team_invite_cancel,
+        name="team_invite_cancel",
     ),
 
     path(

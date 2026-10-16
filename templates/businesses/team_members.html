@@ -21,210 +21,308 @@ Manage people who have access to this business.
 
 <style>
 
+.team-layout {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1.5fr)
+        minmax(320px, 0.7fr);
+
+    gap: 18px;
+}
+
+
+.team-stack {
+    display: flex;
+    flex-direction: column;
+
+    gap: 18px;
+}
+
+
+.team-panel {
+    overflow: hidden;
+}
+
+
+.team-form-body {
+    padding: 20px 22px 22px;
+}
+
+
+.team-add-form {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(140px, 0.42fr);
+
+    gap: 14px;
+}
+
+
+.team-field {
+    min-width: 0;
+}
+
+
+.team-field .form-control {
+    width: 100%;
+}
+
+
+.team-actions {
+    display: flex;
+    justify-content: flex-end;
+
+    margin-top: 18px;
+}
+
+
+.team-help {
+    margin-top: 10px;
+
+    color: var(--text-secondary);
+
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+
+.team-table-wrapper {
+    width: 100%;
+    max-width: 100%;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+
+.team-table-wrapper .data-table {
+    width: 100%;
+
+    min-width: 760px;
+}
+
+
+.team-table-wrapper .data-table tbody tr:hover {
+    background: transparent;
+}
+
+
+.team-table-wrapper .data-table tbody tr:hover td {
+    background: var(--surface-secondary);
+}
+
+
+.team-user {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+}
+
+
+.team-avatar {
+    width: 34px;
+    height: 34px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+    background: var(--primary);
+
+    color: #ffffff;
+
+    font-size: 12px;
+    font-weight: 700;
+}
+
+
+.team-user-info {
+    min-width: 0;
+}
+
+
+.team-user-name {
+    color: var(--text-primary);
+
+    font-weight: 650;
+}
+
+
+.team-user-email {
+    margin-top: 2px;
+
+    color: var(--text-secondary);
+
+    font-size: 11px;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+.team-row-actions {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    flex-wrap: wrap;
+}
+
+
+.team-role-form {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+}
+
+
+.team-role-select {
+    min-width: 110px;
+}
+
+
+.team-permission-note {
+    padding: 15px 16px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+
+    background: var(--surface-secondary);
+
+    color: var(--text-secondary);
+
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+
+/* =====================================================
+   INVITATIONS
+===================================================== */
+
+.team-invite-list {
+    display: flex;
+    flex-direction: column;
+}
+
+
+.team-invite-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 18px;
+
+    padding: 16px 22px;
+
+    border-top: 1px solid var(--border);
+}
+
+
+.team-invite-item:first-child {
+    border-top: 0;
+}
+
+
+.team-invite-copy {
+    min-width: 0;
+}
+
+
+.team-invite-email {
+    overflow: hidden;
+
+    color: var(--text-primary);
+
+    font-size: 12px;
+    font-weight: 650;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+.team-invite-meta {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    flex-wrap: wrap;
+
+    margin-top: 5px;
+
+    color: var(--text-secondary);
+
+    font-size: 10.5px;
+}
+
+
+.team-invite-actions {
+    flex-shrink: 0;
+}
+
+
+.team-empty {
+    padding: 24px 22px;
+
+    color: var(--text-secondary);
+
+    font-size: 12px;
+}
+
+
+@media (max-width: 1000px) {
+
     .team-layout {
-        display: grid;
-
-        grid-template-columns:
-            minmax(0, 1.5fr)
-            minmax(300px, 0.7fr);
-
-        gap: 18px;
+        grid-template-columns: 1fr;
     }
 
-
-    .team-panel {
-        overflow: hidden;
-    }
+}
 
 
-    .team-form-body {
-        padding: 20px 22px 22px;
-    }
-
+@media (max-width: 700px) {
 
     .team-add-form {
-        display: grid;
-
-        grid-template-columns:
-            minmax(0, 1fr)
-            minmax(150px, 0.4fr);
-
-        gap: 14px;
+        grid-template-columns: 1fr;
     }
 
 
-    .team-field {
-        min-width: 0;
-    }
-
-
-    .team-field .form-control {
+    .team-actions .btn {
         width: 100%;
     }
 
 
-    .team-actions {
-        display: flex;
-        justify-content: flex-end;
-
-        margin-top: 16px;
+    .team-invite-item {
+        align-items: flex-start;
+        flex-direction: column;
     }
 
 
-    .team-help {
-        margin-top: 8px;
-
-        color: var(--text-secondary);
-
-        font-size: 11px;
-        line-height: 1.5;
-    }
-
-
-    .team-table-wrapper {
+    .team-invite-actions {
         width: 100%;
-        max-width: 100%;
-
-        overflow-x: auto;
-        overflow-y: hidden;
     }
 
 
-    .team-table-wrapper .data-table {
+    .team-invite-actions .btn {
         width: 100%;
-
-        min-width: 760px;
     }
 
-
-    .team-table-wrapper .data-table tbody tr:hover {
-        background: transparent;
-    }
-
-
-    .team-table-wrapper .data-table tbody tr:hover td {
-        background: var(--surface-secondary);
-    }
-
-
-    .team-user {
-        display: flex;
-        align-items: center;
-
-        gap: 10px;
-    }
-
-
-    .team-avatar {
-        width: 34px;
-        height: 34px;
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        flex-shrink: 0;
-
-        border-radius: 50%;
-
-        background: var(--primary);
-
-        color: #ffffff;
-
-        font-size: 12px;
-        font-weight: 700;
-    }
-
-
-    .team-user-info {
-        min-width: 0;
-    }
-
-
-    .team-user-name {
-        color: var(--text-primary);
-
-        font-weight: 650;
-    }
-
-
-    .team-user-email {
-        margin-top: 2px;
-
-        color: var(--text-secondary);
-
-        font-size: 11px;
-
-        overflow: hidden;
-
-        text-overflow: ellipsis;
-
-        white-space: nowrap;
-    }
-
-
-    .team-row-actions {
-        display: flex;
-        align-items: center;
-
-        gap: 8px;
-
-        flex-wrap: wrap;
-    }
-
-
-    .team-role-form {
-        display: flex;
-        align-items: center;
-
-        gap: 8px;
-    }
-
-
-    .team-role-select {
-        min-width: 110px;
-    }
-
-
-    .team-permission-note {
-        padding: 15px 16px;
-
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-
-        background: var(--surface-secondary);
-
-        color: var(--text-secondary);
-
-        font-size: 12px;
-        line-height: 1.6;
-    }
-
-
-    @media (max-width: 1000px) {
-
-        .team-layout {
-            grid-template-columns: 1fr;
-        }
-
-    }
-
-
-    @media (max-width: 700px) {
-
-        .team-add-form {
-            grid-template-columns: 1fr;
-        }
-
-
-        .team-actions .btn {
-            width: 100%;
-        }
-
-    }
+}
 
 </style>
-
 
 
 {% if messages %}
@@ -249,201 +347,264 @@ Manage people who have access to this business.
 {% endif %}
 
 
-
 <div class="team-layout">
 
 
-    {# ================================================= #}
-    {# MEMBERS LIST                                      #}
-    {# ================================================= #}
+    <div class="team-stack">
 
-    <section class="panel team-panel">
 
-        <div class="panel-header">
+        {# ================================================= #}
+        {# MEMBERS                                           #}
+        {# ================================================= #}
 
-            <div>
+        <section class="panel team-panel">
 
-                <h2>
-                    Team
-                </h2>
+            <div class="panel-header">
 
-                <p>
-                    Active and archived members of {{ business.name }}.
-                </p>
+                <div>
+
+                    <h2>
+                        Team
+                    </h2>
+
+                    <p>
+                        Active and archived members of {{ business.name }}.
+                    </p>
+
+                </div>
 
             </div>
 
-        </div>
 
+            <div class="team-table-wrapper">
 
-        <div class="team-table-wrapper">
+                <table class="data-table">
 
-            <table class="data-table">
-
-                <thead>
-
-                    <tr>
-                        <th>Member</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th>Joined</th>
-                        <th>Actions</th>
-                    </tr>
-
-                </thead>
-
-
-                <tbody>
-
-                    {% for member in members %}
+                    <thead>
 
                         <tr>
 
-                            <td>
+                            <th>
+                                Member
+                            </th>
 
-                                <div class="team-user">
+                            <th>
+                                Role
+                            </th>
 
-                                    <div class="team-avatar">
+                            <th>
+                                Status
+                            </th>
 
-                                        {% if member.user.first_name %}
-                                            {{ member.user.first_name|slice:":1"|upper }}
-                                        {% else %}
-                                            {{ member.user.username|slice:":1"|upper }}
-                                        {% endif %}
+                            <th>
+                                Joined
+                            </th>
 
-                                    </div>
+                            <th>
+                                Actions
+                            </th>
+
+                        </tr>
+
+                    </thead>
 
 
-                                    <div class="team-user-info">
+                    <tbody>
 
-                                        <div class="team-user-name">
+                        {% for member in members %}
 
-                                            {% if member.user.get_full_name %}
-                                                {{ member.user.get_full_name }}
+                            <tr>
+
+                                <td>
+
+                                    <div class="team-user">
+
+                                        <div class="team-avatar">
+
+                                            {% if member.user.first_name %}
+
+                                                {{ member.user.first_name|slice:":1"|upper }}
+
                                             {% else %}
-                                                {{ member.user.username }}
-                                            {% endif %}
 
-                                            {% if member.user == request.user %}
-                                                (You)
+                                                {{ member.user.username|slice:":1"|upper }}
+
                                             {% endif %}
 
                                         </div>
 
 
-                                        <div class="team-user-email">
+                                        <div class="team-user-info">
 
-                                            {% if member.user.email %}
-                                                {{ member.user.email }}
-                                            {% else %}
-                                                @{{ member.user.username }}
-                                            {% endif %}
+                                            <div class="team-user-name">
+
+                                                {% if member.user.get_full_name %}
+
+                                                    {{ member.user.get_full_name }}
+
+                                                {% else %}
+
+                                                    {{ member.user.username }}
+
+                                                {% endif %}
+
+
+                                                {% if member.user == request.user %}
+
+                                                    (You)
+
+                                                {% endif %}
+
+                                            </div>
+
+
+                                            <div class="team-user-email">
+
+                                                {% if member.user.email %}
+
+                                                    {{ member.user.email }}
+
+                                                {% else %}
+
+                                                    @{{ member.user.username }}
+
+                                                {% endif %}
+
+                                            </div>
 
                                         </div>
 
                                     </div>
 
-                                </div>
-
-                            </td>
+                                </td>
 
 
-                            <td>
-                                {{ member.get_role_display }}
-                            </td>
+                                <td>
+                                    {{ member.get_role_display }}
+                                </td>
 
 
-                            <td>
+                                <td>
 
-                                {% if member.is_active %}
+                                    {% if member.is_active %}
 
-                                    {% include "components/badge.html" with text="Active" type="success" %}
+                                        {% include "components/badge.html" with text="Active" type="success" %}
 
-                                {% else %}
+                                    {% else %}
 
-                                    {% include "components/badge.html" with text="Archived" type="neutral" %}
+                                        {% include "components/badge.html" with text="Archived" type="neutral" %}
 
-                                {% endif %}
+                                    {% endif %}
 
-                            </td>
-
-
-                            <td>
-                                {{ member.created_at|date:"d M Y" }}
-                            </td>
+                                </td>
 
 
-                            <td>
-
-                                {% if can_manage_team %}
-
-                                    <div class="team-row-actions">
+                                <td>
+                                    {{ member.created_at|date:"d M Y" }}
+                                </td>
 
 
-                                        {% if member.is_active %}
+                                <td>
+
+                                    {% if can_manage_team %}
+
+                                        <div class="team-row-actions">
 
 
-                                            {% if membership.role == "owner" and member.role != "owner" and member.user != request.user %}
+                                            {% if member.is_active %}
 
-                                                <form
-                                                    method="post"
-                                                    action="{% url 'businesses:team_role_update' member.pk %}"
-                                                    class="team-role-form"
-                                                >
 
-                                                    {% csrf_token %}
+                                                {% if membership.role == "owner" and member.role != "owner" and member.user != request.user %}
 
-                                                    <select
-                                                        name="role"
-                                                        class="form-control team-role-select"
+                                                    <form
+                                                        method="post"
+                                                        action="{% url 'businesses:team_role_update' member.pk %}"
+                                                        class="team-role-form"
                                                     >
 
-                                                        <option
-                                                            value="admin"
-                                                            {% if member.role == "admin" %}selected{% endif %}
+                                                        {% csrf_token %}
+
+                                                        <select
+                                                            name="role"
+                                                            class="form-control team-role-select"
                                                         >
-                                                            Admin
-                                                        </option>
 
-                                                        <option
-                                                            value="staff"
-                                                            {% if member.role == "staff" %}selected{% endif %}
+                                                            <option
+                                                                value="admin"
+                                                                {% if member.role == "admin" %}
+                                                                    selected
+                                                                {% endif %}
+                                                            >
+                                                                Admin
+                                                            </option>
+
+                                                            <option
+                                                                value="staff"
+                                                                {% if member.role == "staff" %}
+                                                                    selected
+                                                                {% endif %}
+                                                            >
+                                                                Staff
+                                                            </option>
+
+                                                        </select>
+
+
+                                                        <button
+                                                            type="submit"
+                                                            class="btn btn-secondary btn-small"
                                                         >
-                                                            Staff
-                                                        </option>
+                                                            Save
+                                                        </button>
 
-                                                    </select>
+                                                    </form>
 
-
-                                                    <button
-                                                        type="submit"
-                                                        class="btn btn-secondary btn-small"
-                                                    >
-                                                        Save
-                                                    </button>
-
-                                                </form>
-
-                                            {% endif %}
+                                                {% endif %}
 
 
-                                            {% if member.user != request.user and member.role != "owner" %}
+                                                {% if member.user != request.user and member.role != "owner" %}
+
+                                                    {% if membership.role == "owner" or member.role == "staff" %}
+
+                                                        <form
+                                                            method="post"
+                                                            action="{% url 'businesses:team_deactivate' member.pk %}"
+                                                            onsubmit="return confirm('Deactivate this team member?');"
+                                                        >
+
+                                                            {% csrf_token %}
+
+                                                            <button
+                                                                type="submit"
+                                                                class="btn btn-danger btn-small"
+                                                            >
+                                                                Deactivate
+                                                            </button>
+
+                                                        </form>
+
+                                                    {% endif %}
+
+                                                {% endif %}
+
+
+                                            {% else %}
+
 
                                                 {% if membership.role == "owner" or member.role == "staff" %}
 
                                                     <form
                                                         method="post"
-                                                        action="{% url 'businesses:team_deactivate' member.pk %}"
-                                                        onsubmit="return confirm('Deactivate this team member?');"
+                                                        action="{% url 'businesses:team_restore' member.pk %}"
                                                     >
 
                                                         {% csrf_token %}
 
                                                         <button
                                                             type="submit"
-                                                            class="btn btn-danger btn-small"
+                                                            class="btn btn-primary btn-small"
                                                         >
-                                                            Deactivate
+                                                            Restore
                                                         </button>
 
                                                     </form>
@@ -453,78 +614,171 @@ Manage people who have access to this business.
                                             {% endif %}
 
 
-                                        {% else %}
+                                            {% if member.role == "owner" %}
 
-
-                                            {% if membership.role == "owner" or member.role == "staff" %}
-
-                                                <form
-                                                    method="post"
-                                                    action="{% url 'businesses:team_restore' member.pk %}"
-                                                >
-
-                                                    {% csrf_token %}
-
-                                                    <button
-                                                        type="submit"
-                                                        class="btn btn-primary btn-small"
-                                                    >
-                                                        Restore
-                                                    </button>
-
-                                                </form>
+                                                <span class="badge badge-neutral">
+                                                    Protected
+                                                </span>
 
                                             {% endif %}
 
-                                        {% endif %}
+                                        </div>
+
+                                    {% else %}
+
+                                        <span class="badge badge-neutral">
+                                            View Only
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+                            </tr>
+
+                        {% empty %}
+
+                            <tr>
+
+                                <td colspan="5">
+
+                                    No team members found.
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
 
 
-                                        {% if member.role == "owner" %}
+        {# ================================================= #}
+        {# PENDING INVITATIONS                               #}
+        {# ================================================= #}
 
-                                            <span class="badge badge-neutral">
-                                                Protected
-                                            </span>
+        <section class="panel team-panel">
 
-                                        {% endif %}
+            <div class="panel-header">
+
+                <div>
+
+                    <h2>
+                        Pending Invitations
+                    </h2>
+
+                    <p>
+                        Invitations waiting to be accepted.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            {% if pending_invitations %}
+
+                <div class="team-invite-list">
+
+                    {% for invitation in pending_invitations %}
+
+                        <div class="team-invite-item">
+
+                            <div class="team-invite-copy">
+
+                                <div class="team-invite-email">
+                                    {{ invitation.email }}
+                                </div>
+
+
+                                <div class="team-invite-meta">
+
+                                    <span>
+                                        {{ invitation.get_role_display }}
+                                    </span>
+
+                                    <span>
+                                        •
+                                    </span>
+
+                                    <span>
+                                        Invited
+                                        {{ invitation.created_at|date:"d M Y" }}
+                                    </span>
+
+                                    <span>
+                                        •
+                                    </span>
+
+                                    <span>
+                                        Expires
+                                        {{ invitation.expires_at|date:"d M Y" }}
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            {% if can_manage_team %}
+
+                                {% if membership.role == "owner" or invitation.role == "staff" %}
+
+                                    <div class="team-invite-actions">
+
+                                        <form
+                                            method="post"
+                                            action="{% url 'businesses:team_invite_cancel' invitation.pk %}"
+                                            onsubmit="return confirm('Cancel this invitation?');"
+                                        >
+
+                                            {% csrf_token %}
+
+                                            <button
+                                                type="submit"
+                                                class="btn btn-secondary btn-small"
+                                            >
+                                                Cancel Invite
+                                            </button>
+
+                                        </form>
 
                                     </div>
 
-                                {% else %}
-
-                                    <span class="badge badge-neutral">
-                                        View Only
-                                    </span>
-
                                 {% endif %}
 
-                            </td>
+                            {% endif %}
 
-                        </tr>
-
-                    {% empty %}
-
-                        <tr>
-
-                            <td colspan="5">
-                                No team members found.
-                            </td>
-
-                        </tr>
+                        </div>
 
                     {% endfor %}
 
-                </tbody>
+                </div>
 
-            </table>
+            {% else %}
 
-        </div>
+                <div class="team-empty">
 
-    </section>
+                    No pending invitations.
 
+                </div>
+
+            {% endif %}
+
+        </section>
+
+
+    </div>
 
 
     {# ================================================= #}
-    {# ADD MEMBER                                        #}
+    {# INVITE MEMBER                                     #}
     {# ================================================= #}
 
     <section class="panel">
@@ -534,11 +788,11 @@ Manage people who have access to this business.
             <div>
 
                 <h2>
-                    Add Team Member
+                    Invite Team Member
                 </h2>
 
                 <p>
-                    Add an existing OrderPilot user.
+                    Add an existing user or invite someone new.
                 </p>
 
             </div>
@@ -558,35 +812,18 @@ Manage people who have access to this business.
                     {% csrf_token %}
 
 
-                    {% if add_form.non_field_errors %}
-
-                        <div class="alert alert-danger">
-                            {{ add_form.non_field_errors }}
-                        </div>
-
-                    {% endif %}
-
-
                     <div class="team-add-form">
 
                         <div class="team-field">
 
                             <label
-                                for="{{ add_form.user_identifier.id_for_label }}"
+                                for="{{ add_form.email.id_for_label }}"
                                 class="form-label"
                             >
-                                Username or Email
+                                Email Address
                             </label>
 
-                            {{ add_form.user_identifier }}
-
-                            {% if add_form.user_identifier.errors %}
-
-                                <div class="form-error">
-                                    {{ add_form.user_identifier.errors|striptags }}
-                                </div>
-
-                            {% endif %}
+                            {{ add_form.email }}
 
                         </div>
 
@@ -602,14 +839,6 @@ Manage people who have access to this business.
 
                             {{ add_form.role }}
 
-                            {% if add_form.role.errors %}
-
-                                <div class="form-error">
-                                    {{ add_form.role.errors|striptags }}
-                                </div>
-
-                            {% endif %}
-
                         </div>
 
                     </div>
@@ -617,10 +846,13 @@ Manage people who have access to this business.
 
                     <div class="team-help">
 
-                        The user must already have a Django / OrderPilot account.
+                        Existing OrderPilot users are added instantly.
+                        New users receive an invitation to create their account and join this team.
 
                         {% if membership.role == "admin" %}
-                            As an Admin, you can only add Staff members.
+
+                            As an Admin, you can only invite Staff members.
+
                         {% endif %}
 
                     </div>
@@ -632,7 +864,7 @@ Manage people who have access to this business.
                             type="submit"
                             class="btn btn-primary"
                         >
-                            Add Member
+                            Send Invitation
                         </button>
 
                     </div>
@@ -642,8 +874,10 @@ Manage people who have access to this business.
             {% else %}
 
                 <div class="team-permission-note">
+
                     You have read-only access to the team.
                     Only owners and admins can manage members.
+
                 </div>
 
             {% endif %}
@@ -651,6 +885,7 @@ Manage people who have access to this business.
         </div>
 
     </section>
+
 
 </div>
 

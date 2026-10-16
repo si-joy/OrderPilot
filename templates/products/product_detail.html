@@ -52,50 +52,54 @@ Product details, pricing and inventory summary.
 
     <div class="detail-actions">
 
-        <a
-            href="{% url 'products:update' product.pk %}"
-            class="btn btn-secondary"
-        >
-            Edit Product
-        </a>
+        {% if can_manage_inventory %}
 
-
-        {% if product.is_active %}
-
-            <form
-                method="post"
-                action="{% url 'products:archive' product.pk %}"
-                onsubmit="return confirm('Archive this product?');"
+            <a
+                href="{% url 'products:update' product.pk %}"
+                class="btn btn-secondary"
             >
+                Edit Product
+            </a>
 
-                {% csrf_token %}
 
-                <button
-                    type="submit"
-                    class="btn btn-danger"
+            {% if product.is_active %}
+
+                <form
+                    method="post"
+                    action="{% url 'products:archive' product.pk %}"
+                    onsubmit="return confirm('Archive this product?');"
                 >
-                    Archive
-                </button>
 
-            </form>
+                    {% csrf_token %}
 
-        {% else %}
+                    <button
+                        type="submit"
+                        class="btn btn-danger"
+                    >
+                        Archive
+                    </button>
 
-            <form
-                method="post"
-                action="{% url 'products:restore' product.pk %}"
-            >
+                </form>
 
-                {% csrf_token %}
+            {% else %}
 
-                <button
-                    type="submit"
-                    class="btn btn-primary"
+                <form
+                    method="post"
+                    action="{% url 'products:restore' product.pk %}"
                 >
-                    Restore Product
-                </button>
 
-            </form>
+                    {% csrf_token %}
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        Restore Product
+                    </button>
+
+                </form>
+
+            {% endif %}
 
         {% endif %}
 
@@ -329,186 +333,188 @@ Product details, pricing and inventory summary.
 <!-- =====================================================
      STOCK ADJUSTMENT
 ====================================================== -->
+{% if can_manage_inventory %}
 
-<section class="panel">
-
-    <div class="panel-header">
-
-        <div>
-
-            <h2>
-                Adjust Stock
-            </h2>
-
-            <p>
-                Increase or decrease inventory with a permanent audit record.
-            </p>
-
-        </div>
-
-    </div>
-
-
-    <form
-        method="post"
-        action="{% url 'products:stock_adjust' product.pk %}"
-    >
-
-        {% csrf_token %}
-
-
-        <div class="form-section">
-
-            <div class="form-grid">
-
-                <!-- =========================================
-                     ADJUSTMENT TYPE
-                ========================================== -->
-
-                <div class="form-group">
-
-                    <label
-                        for="{{ adjustment_form.adjustment_type.id_for_label }}"
-                        class="form-label"
-                    >
-                        Adjustment Type
-
-                        <span class="required">
-                            *
-                        </span>
-
-                    </label>
-
-
-                    {{ adjustment_form.adjustment_type }}
-
-
-                    {% if adjustment_form.adjustment_type.errors %}
-
-                        <div class="form-error">
-                            {{ adjustment_form.adjustment_type.errors|striptags }}
-                        </div>
-
-                    {% endif %}
-
-                </div>
-
-
-                <!-- =========================================
-                     QUANTITY
-                ========================================== -->
-
-                <div class="form-group">
-
-                    <label
-                        for="{{ adjustment_form.quantity.id_for_label }}"
-                        class="form-label"
-                    >
-                        Quantity
-
-                        <span class="required">
-                            *
-                        </span>
-
-                    </label>
-
-
-                    {{ adjustment_form.quantity }}
-
-
-                    {% if adjustment_form.quantity.errors %}
-
-                        <div class="form-error">
-                            {{ adjustment_form.quantity.errors|striptags }}
-                        </div>
-
-                    {% endif %}
-
-                </div>
-
+    <section class="panel">
+    
+        <div class="panel-header">
+        
+            <div>
+            
+                <h2>
+                    Adjust Stock
+                </h2>
+            
+                <p>
+                    Increase or decrease inventory with a permanent audit record.
+                </p>
+            
             </div>
-
-
-            <!-- =============================================
-                 NOTE
-            ============================================== -->
-
-            <div class="form-group">
-
-                <label
-                    for="{{ adjustment_form.note.id_for_label }}"
-                    class="form-label"
-                >
-                    Note
-                </label>
-
-
-                {{ adjustment_form.note }}
-
-
-                {% if adjustment_form.note.errors %}
-
-                    <div class="form-error">
-                        {{ adjustment_form.note.errors|striptags }}
+        
+        </div>
+    
+    
+        <form
+            method="post"
+            action="{% url 'products:stock_adjust' product.pk %}"
+        >
+    
+            {% csrf_token %}
+    
+    
+            <div class="form-section">
+            
+                <div class="form-grid">
+                
+                    <!-- =========================================
+                         ADJUSTMENT TYPE
+                    ========================================== -->
+                
+                    <div class="form-group">
+                    
+                        <label
+                            for="{{ adjustment_form.adjustment_type.id_for_label }}"
+                            class="form-label"
+                        >
+                            Adjustment Type
+                    
+                            <span class="required">
+                                *
+                            </span>
+                        
+                        </label>
+                    
+                    
+                        {{ adjustment_form.adjustment_type }}
+                    
+                    
+                        {% if adjustment_form.adjustment_type.errors %}
+                    
+                            <div class="form-error">
+                                {{ adjustment_form.adjustment_type.errors|striptags }}
+                            </div>
+                        
+                        {% endif %}
+                        
                     </div>
-
-                {% endif %}
-
-
-                <div class="form-help">
-
-                    Example:
-                    supplier restock,
-                    damaged during delivery,
-                    lost item,
-                    or physical stock correction.
-
+                
+                
+                    <!-- =========================================
+                         QUANTITY
+                    ========================================== -->
+                
+                    <div class="form-group">
+                    
+                        <label
+                            for="{{ adjustment_form.quantity.id_for_label }}"
+                            class="form-label"
+                        >
+                            Quantity
+                    
+                            <span class="required">
+                                *
+                            </span>
+                        
+                        </label>
+                    
+                    
+                        {{ adjustment_form.quantity }}
+                    
+                    
+                        {% if adjustment_form.quantity.errors %}
+                    
+                            <div class="form-error">
+                                {{ adjustment_form.quantity.errors|striptags }}
+                            </div>
+                        
+                        {% endif %}
+                        
+                    </div>
+                
                 </div>
-
+            
+            
+                <!-- =============================================
+                     NOTE
+                ============================================== -->
+            
+                <div class="form-group">
+                
+                    <label
+                        for="{{ adjustment_form.note.id_for_label }}"
+                        class="form-label"
+                    >
+                        Note
+                    </label>
+                
+                
+                    {{ adjustment_form.note }}
+                
+                
+                    {% if adjustment_form.note.errors %}
+                
+                        <div class="form-error">
+                            {{ adjustment_form.note.errors|striptags }}
+                        </div>
+                    
+                    {% endif %}
+                    
+                    
+                    <div class="form-help">
+                    
+                        Example:
+                        supplier restock,
+                        damaged during delivery,
+                        lost item,
+                        or physical stock correction.
+                    
+                    </div>
+                
+                </div>
+            
+            
+                <!-- =============================================
+                     CURRENT INVENTORY NOTE
+                ============================================== -->
+            
+                <div class="order-summary-note">
+                
+                    Current stock:
+                
+                    <strong>
+                        {{ product.stock_quantity }}
+                    </strong>
+                
+                    units.
+                
+                    Every manual adjustment is recorded with
+                    the previous stock, resulting stock,
+                    adjustment reason, user and date.
+                
+                </div>
+            
             </div>
-
-
-            <!-- =============================================
-                 CURRENT INVENTORY NOTE
-            ============================================== -->
-
-            <div class="order-summary-note">
-
-                Current stock:
-
-                <strong>
-                    {{ product.stock_quantity }}
-                </strong>
-
-                units.
-
-                Every manual adjustment is recorded with
-                the previous stock, resulting stock,
-                adjustment reason, user and date.
-
+        
+        
+            <div class="form-actions">
+            
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    Save Stock Adjustment
+                </button>
+            
             </div>
+        
+        </form>
+    
+    </section>
+    
+    
+    <div style="height: 18px;"></div>
 
-        </div>
-
-
-        <div class="form-actions">
-
-            <button
-                type="submit"
-                class="btn btn-primary"
-            >
-                Save Stock Adjustment
-            </button>
-
-        </div>
-
-    </form>
-
-</section>
-
-
-<div style="height: 18px;"></div>
-
+{% endif %}
 
 <!-- =====================================================
      STOCK MOVEMENT HISTORY

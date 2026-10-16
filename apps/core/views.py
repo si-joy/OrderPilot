@@ -15,6 +15,7 @@ from django.views.decorators.http import require_POST
 
 from apps.businesses.models import (
     Business,
+    BusinessInvitation,
     BusinessMember,
 )
 from apps.businesses.utils import get_current_business
@@ -28,6 +29,7 @@ from .forms import (
     ProfileUpdateForm,
 )
 from .models import UserProfile
+from django.utils import timezone
 
 
 # =========================================================
@@ -73,20 +75,99 @@ class OrderPilotLoginView(LoginView):
         return "/"
 
 
+
 # =========================================================
 # SIGNUP / ONBOARDING
 # =========================================================
 
 def signup(request):
+
     if request.user.is_authenticated:
+
         return redirect(
             "core:dashboard"
         )
 
+    # =====================================================
+    # INVITATION
+    # =====================================================
+
+    invite_token = (
+        request.POST.get(
+            "invite_token"
+        )
+        or
+        request.GET.get(
+            "invite"
+        )
+        or
+        ""
+    )
+
+    invite_token = (
+        invite_token.strip()
+    )
+
+    invitation = None
+
+    if invite_token:
+
+        invitation = (
+            BusinessInvitation.objects
+            .filter(
+                token=invite_token,
+            )
+            .select_related(
+                "business",
+                "invited_by",
+            )
+            .first()
+        )
+
+        if (
+            not invitation
+            or
+            invitation.status
+            != BusinessInvitation.STATUS_PENDING
+        ):
+
+            messages.error(
+                request,
+                (
+                    "This team invitation "
+                    "is no longer valid."
+                ),
+            )
+
+            return redirect(
+                "core:signup"
+            )
+
+        if invitation.is_expired:
+
+            invitation.mark_expired_if_needed()
+
+            messages.error(
+                request,
+                (
+                    "This team invitation "
+                    "has expired."
+                ),
+            )
+
+            return redirect(
+                "core:signup"
+            )
+
+    # =====================================================
+    # POST
+    # =====================================================
+
     if request.method == "POST":
 
         form = OrderPilotSignupForm(
-            request.POST
+            request.POST,
+            invitation=invitation,
         )
 
         if form.is_valid():
@@ -95,66 +176,143 @@ def signup(request):
 
                 user = form.save()
 
-                business_name = (
-                    form.cleaned_data[
-                        "business_name"
-                    ]
-                )
+                # =========================================
+                # INVITED USER
+                # =========================================
 
-                business_phone = (
-                    form.cleaned_data[
-                        "business_phone"
-                    ]
-                    .strip()
-                )
+                if invitation:
 
-                business = (
-                    Business.objects.create(
-                        name=business_name,
-                        slug=generate_business_slug(
-                            business_name
+                    BusinessMember.objects.create(
+                        business=(
+                            invitation.business
                         ),
-                        phone=business_phone,
-                        email=user.email,
+                        user=user,
+                        role=(
+                            invitation.role
+                        ),
+                        is_active=True,
                     )
-                )
 
-                BusinessMember.objects.create(
-                    business=business,
-                    user=user,
-                    role=BusinessMember.ROLE_OWNER,
-                    is_active=True,
-                )
+                    invitation.status = (
+                        BusinessInvitation
+                        .STATUS_ACCEPTED
+                    )
 
-                UserProfile.objects.get_or_create(
-                    user=user
-                )
+                    invitation.accepted_at = (
+                        timezone.now()
+                    )
+
+                    invitation.save(
+                        update_fields=[
+                            "status",
+                            "accepted_at",
+                            "updated_at",
+                        ]
+                    )
+
+                    UserProfile.objects.get_or_create(
+                        user=user
+                    )
+
+                # =========================================
+                # NORMAL SIGNUP
+                # =========================================
+
+                else:
+
+                    business_name = (
+                        form.cleaned_data[
+                            "business_name"
+                        ]
+                    )
+
+                    business_phone = (
+                        form.cleaned_data[
+                            "business_phone"
+                        ]
+                        .strip()
+                    )
+
+                    business = (
+                        Business.objects.create(
+                            name=business_name,
+                            slug=(
+                                generate_business_slug(
+                                    business_name
+                                )
+                            ),
+                            phone=business_phone,
+                            email=user.email,
+                        )
+                    )
+
+                    BusinessMember.objects.create(
+                        business=business,
+                        user=user,
+                        role=(
+                            BusinessMember
+                            .ROLE_OWNER
+                        ),
+                        is_active=True,
+                    )
+
+                    UserProfile.objects.get_or_create(
+                        user=user
+                    )
 
             login(
                 request,
                 user,
             )
 
-            messages.success(
-                request,
-                (
-                    "Welcome to OrderPilot! "
-                    "Your workspace has been created."
-                ),
-            )
+            if invitation:
+
+                messages.success(
+                    request,
+                    (
+                        f"Welcome to OrderPilot! "
+                        f"You joined "
+                        f"{invitation.business.name}."
+                    ),
+                )
+
+            else:
+
+                messages.success(
+                    request,
+                    (
+                        "Welcome to OrderPilot! "
+                        "Your workspace has "
+                        "been created."
+                    ),
+                )
 
             return redirect(
                 "core:dashboard"
             )
 
+    # =====================================================
+    # GET
+    # =====================================================
+
     else:
-        form = OrderPilotSignupForm()
+
+        form = OrderPilotSignupForm(
+            invitation=invitation,
+        )
 
     return render(
         request,
         "auth/signup.html",
         {
-            "form": form,
+            "form":
+                form,
+
+            "invitation":
+                invitation,
+
+            "invite_token":
+                invite_token,
         },
     )
 
@@ -398,17 +556,6 @@ def dashboard(request):
         context,
     )
 
-
-# =========================================================
-# COMPONENT DEMO
-# =========================================================
-
-@login_required
-def components_demo(request):
-    return render(
-        request,
-        "core/components_demo.html",
-    )
 
 # =========================================================
 # ERROR HANDLERS

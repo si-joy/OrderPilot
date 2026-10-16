@@ -2,7 +2,13 @@
 
 
 {% block title %}
-Create Account | OrderPilot
+
+    {% if invitation %}
+        Join {{ invitation.business.name }} | OrderPilot
+    {% else %}
+        Create Account | OrderPilot
+    {% endif %}
+
 {% endblock %}
 
 
@@ -10,13 +16,27 @@ Create Account | OrderPilot
 
 <div class="auth-header">
 
-    <h1>
-        Create your workspace
-    </h1>
+    {% if invitation %}
 
-    <p>
-        Create your account and start managing your business with OrderPilot.
-    </p>
+        <h1>
+            Join {{ invitation.business.name }}
+        </h1>
+
+        <p>
+            Create your OrderPilot account to accept the team invitation.
+        </p>
+
+    {% else %}
+
+        <h1>
+            Create your workspace
+        </h1>
+
+        <p>
+            Create your account and start managing your business with OrderPilot.
+        </p>
+
+    {% endif %}
 
 </div>
 
@@ -25,6 +45,50 @@ Create Account | OrderPilot
 
     {% csrf_token %}
 
+
+    {# ===================================================== #}
+    {# INVITATION                                            #}
+    {# ===================================================== #}
+
+    {% if invitation %}
+
+        <input
+            type="hidden"
+            name="invite_token"
+            value="{{ invitation.token }}"
+        >
+
+
+        <div class="alert alert-success">
+
+            <strong>
+                Team Invitation
+            </strong>
+
+            <div style="margin-top: 5px;">
+
+                You've been invited to join
+
+                <strong>
+                    {{ invitation.business.name }}
+                </strong>
+
+                as
+
+                <strong>
+                    {{ invitation.get_role_display }}
+                </strong>.
+
+            </div>
+
+        </div>
+
+    {% endif %}
+
+
+    {# ===================================================== #}
+    {# NON FIELD ERRORS                                      #}
+    {# ===================================================== #}
 
     {% if form.non_field_errors %}
 
@@ -36,6 +100,16 @@ Create Account | OrderPilot
 
 
     <div class="signup-grid">
+
+
+        {# ================================================= #}
+        {# PERSONAL INFORMATION                              #}
+        {# ================================================= #}
+
+        <div class="signup-section-title signup-field-full">
+            Personal Information
+        </div>
+
 
         <div class="auth-field">
 
@@ -49,9 +123,11 @@ Create Account | OrderPilot
             {{ form.first_name }}
 
             {% if form.first_name.errors %}
+
                 <div class="form-error">
                     {{ form.first_name.errors|striptags }}
                 </div>
+
             {% endif %}
 
         </div>
@@ -69,9 +145,11 @@ Create Account | OrderPilot
             {{ form.last_name }}
 
             {% if form.last_name.errors %}
+
                 <div class="form-error">
                     {{ form.last_name.errors|striptags }}
                 </div>
+
             {% endif %}
 
         </div>
@@ -83,15 +161,33 @@ Create Account | OrderPilot
                 for="{{ form.email.id_for_label }}"
                 class="form-label"
             >
-                Email
+                Email Address
             </label>
 
             {{ form.email }}
 
+            {% if invitation %}
+
+                <div
+                    style="
+                        margin-top: 7px;
+                        color: var(--text-secondary);
+                        font-size: 11px;
+                        line-height: 1.5;
+                    "
+                >
+                    This email is linked to your team invitation and cannot be changed.
+                </div>
+
+            {% endif %}
+
+
             {% if form.email.errors %}
+
                 <div class="form-error">
                     {{ form.email.errors|striptags }}
                 </div>
+
             {% endif %}
 
         </div>
@@ -109,58 +205,77 @@ Create Account | OrderPilot
             {{ form.username }}
 
             {% if form.username.errors %}
+
                 <div class="form-error">
                     {{ form.username.errors|striptags }}
                 </div>
+
             {% endif %}
 
         </div>
 
 
-        <div class="signup-section-title signup-field-full">
-            Business Information
-        </div>
+        {# ================================================= #}
+        {# BUSINESS INFORMATION                              #}
+        {# NORMAL SIGNUP ONLY                                 #}
+        {# ================================================= #}
+
+        {% if not invitation %}
+
+            <div class="signup-section-title signup-field-full">
+                Business Information
+            </div>
 
 
-        <div class="auth-field signup-field-full">
+            <div class="auth-field signup-field-full">
 
-            <label
-                for="{{ form.business_name.id_for_label }}"
-                class="form-label"
-            >
-                Business Name
-            </label>
+                <label
+                    for="{{ form.business_name.id_for_label }}"
+                    class="form-label"
+                >
+                    Business Name
+                </label>
 
-            {{ form.business_name }}
+                {{ form.business_name }}
 
-            {% if form.business_name.errors %}
-                <div class="form-error">
-                    {{ form.business_name.errors|striptags }}
-                </div>
-            {% endif %}
+                {% if form.business_name.errors %}
 
-        </div>
+                    <div class="form-error">
+                        {{ form.business_name.errors|striptags }}
+                    </div>
+
+                {% endif %}
+
+            </div>
 
 
-        <div class="auth-field signup-field-full">
+            <div class="auth-field signup-field-full">
 
-            <label
-                for="{{ form.business_phone.id_for_label }}"
-                class="form-label"
-            >
-                Business Phone
-            </label>
+                <label
+                    for="{{ form.business_phone.id_for_label }}"
+                    class="form-label"
+                >
+                    Business Phone
+                </label>
 
-            {{ form.business_phone }}
+                {{ form.business_phone }}
 
-            {% if form.business_phone.errors %}
-                <div class="form-error">
-                    {{ form.business_phone.errors|striptags }}
-                </div>
-            {% endif %}
+                {% if form.business_phone.errors %}
 
-        </div>
+                    <div class="form-error">
+                        {{ form.business_phone.errors|striptags }}
+                    </div>
 
+                {% endif %}
+
+            </div>
+
+        {% endif %}
+
+
+        {# ================================================= #}
+        {# SECURITY                                          #}
+        {# ================================================= #}
 
         <div class="signup-section-title signup-field-full">
             Security
@@ -179,9 +294,11 @@ Create Account | OrderPilot
             {{ form.password1 }}
 
             {% if form.password1.errors %}
+
                 <div class="form-error">
                     {{ form.password1.errors|striptags }}
                 </div>
+
             {% endif %}
 
         </div>
@@ -199,9 +316,11 @@ Create Account | OrderPilot
             {{ form.password2 }}
 
             {% if form.password2.errors %}
+
                 <div class="form-error">
                     {{ form.password2.errors|striptags }}
                 </div>
+
             {% endif %}
 
         </div>
@@ -209,13 +328,27 @@ Create Account | OrderPilot
     </div>
 
 
+    {# ===================================================== #}
+    {# SUBMIT                                                #}
+    {# ===================================================== #}
+
     <button
         type="submit"
         class="btn btn-primary auth-submit"
     >
-        Create Account
+
+        {% if invitation %}
+            Create Account & Join Team
+        {% else %}
+            Create Account
+        {% endif %}
+
     </button>
 
+
+    {# ===================================================== #}
+    {# FOOTER                                                #}
+    {# ===================================================== #}
 
     <div class="auth-footer-link">
 

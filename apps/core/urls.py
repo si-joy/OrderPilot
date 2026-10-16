@@ -96,11 +96,5 @@ urlpatterns = [
         ),
         name="password_reset_complete",
     ),
-
-    path(
-        "components/",
-        views.components_demo,
-        name="components_demo",
-    ),
     
 ]

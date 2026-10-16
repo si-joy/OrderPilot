@@ -18,7 +18,10 @@ User = get_user_model()
 # LOGIN
 # =========================================================
 
-class OrderPilotAuthenticationForm(AuthenticationForm):
+class OrderPilotAuthenticationForm(
+    AuthenticationForm,
+):
+
     username = forms.CharField(
         widget=forms.TextInput(
             attrs={
@@ -43,7 +46,10 @@ class OrderPilotAuthenticationForm(AuthenticationForm):
 # SIGNUP / BUSINESS ONBOARDING
 # =========================================================
 
-class OrderPilotSignupForm(UserCreationForm):
+class OrderPilotSignupForm(
+    UserCreationForm,
+):
+
     first_name = forms.CharField(
         max_length=150,
         widget=forms.TextInput(
@@ -142,54 +148,143 @@ class OrderPilotSignupForm(UserCreationForm):
             "password2",
         ]
 
-    def clean_email(self):
-        email = (
-            self.cleaned_data
-            .get("email", "")
-            .strip()
-            .lower()
+    def __init__(
+        self,
+        *args,
+        invitation=None,
+        **kwargs,
+    ):
+        super().__init__(
+            *args,
+            **kwargs,
         )
+
+        self.invitation = invitation
+
+        if invitation:
+
+            self.fields[
+                "email"
+            ].initial = invitation.email
+
+            self.fields[
+                "email"
+            ].disabled = True
+
+            self.fields[
+                "business_name"
+            ].required = False
+
+            self.fields[
+                "business_phone"
+            ].required = False
+
+            self.fields[
+                "business_name"
+            ].widget = forms.HiddenInput()
+
+            self.fields[
+                "business_phone"
+            ].widget = forms.HiddenInput()
+
+    def clean_email(
+        self,
+    ):
+
+        if self.invitation:
+
+            email = (
+                self.invitation.email
+                .strip()
+                .lower()
+            )
+
+        else:
+
+            email = (
+                self.cleaned_data
+                .get(
+                    "email",
+                    "",
+                )
+                .strip()
+                .lower()
+            )
 
         if User.objects.filter(
             email__iexact=email
         ).exists():
+
             raise forms.ValidationError(
-                "An account with this email already exists."
+                (
+                    "An account with this "
+                    "email already exists."
+                )
             )
 
         return email
 
-    def clean_business_name(self):
+    def clean_business_name(
+        self,
+    ):
+
+        if self.invitation:
+
+            return (
+                self.invitation
+                .business
+                .name
+            )
+
         business_name = (
             self.cleaned_data
-            .get("business_name", "")
+            .get(
+                "business_name",
+                "",
+            )
             .strip()
         )
 
-        if len(business_name) < 2:
+        if len(
+            business_name
+        ) < 2:
+
             raise forms.ValidationError(
-                "Please enter a valid business name."
+                (
+                    "Please enter a valid "
+                    "business name."
+                )
             )
 
         return business_name
 
-    def save(self, commit=True):
+    def save(
+        self,
+        commit=True,
+    ):
+
         user = super().save(
             commit=False
         )
 
         user.first_name = (
-            self.cleaned_data["first_name"]
+            self.cleaned_data[
+                "first_name"
+            ]
             .strip()
         )
 
         user.last_name = (
-            self.cleaned_data["last_name"]
+            self.cleaned_data[
+                "last_name"
+            ]
             .strip()
         )
 
         user.email = (
-            self.cleaned_data["email"]
+            self.cleaned_data[
+                "email"
+            ]
             .strip()
             .lower()
         )
@@ -204,12 +299,17 @@ class OrderPilotSignupForm(UserCreationForm):
 # PASSWORD CHANGE
 # =========================================================
 
-class OrderPilotPasswordChangeForm(PasswordChangeForm):
+class OrderPilotPasswordChangeForm(
+    PasswordChangeForm,
+):
+
     old_password = forms.CharField(
         widget=forms.PasswordInput(
             attrs={
                 "class": "form-control",
-                "placeholder": "Current password",
+                "placeholder": (
+                    "Current password"
+                ),
             }
         )
     )
@@ -218,7 +318,9 @@ class OrderPilotPasswordChangeForm(PasswordChangeForm):
         widget=forms.PasswordInput(
             attrs={
                 "class": "form-control",
-                "placeholder": "New password",
+                "placeholder": (
+                    "New password"
+                ),
             }
         )
     )
@@ -227,7 +329,9 @@ class OrderPilotPasswordChangeForm(PasswordChangeForm):
         widget=forms.PasswordInput(
             attrs={
                 "class": "form-control",
-                "placeholder": "Confirm new password",
+                "placeholder": (
+                    "Confirm new password"
+                ),
             }
         )
     )
@@ -237,23 +341,33 @@ class OrderPilotPasswordChangeForm(PasswordChangeForm):
 # PASSWORD RESET
 # =========================================================
 
-class OrderPilotPasswordResetForm(PasswordResetForm):
+class OrderPilotPasswordResetForm(
+    PasswordResetForm,
+):
+
     email = forms.EmailField(
         widget=forms.EmailInput(
             attrs={
                 "class": "form-control",
-                "placeholder": "Email address",
+                "placeholder": (
+                    "Email address"
+                ),
             }
         )
     )
 
 
-class OrderPilotSetPasswordForm(SetPasswordForm):
+class OrderPilotSetPasswordForm(
+    SetPasswordForm,
+):
+
     new_password1 = forms.CharField(
         widget=forms.PasswordInput(
             attrs={
                 "class": "form-control",
-                "placeholder": "New password",
+                "placeholder": (
+                    "New password"
+                ),
             }
         )
     )
@@ -262,7 +376,9 @@ class OrderPilotSetPasswordForm(SetPasswordForm):
         widget=forms.PasswordInput(
             attrs={
                 "class": "form-control",
-                "placeholder": "Confirm new password",
+                "placeholder": (
+                    "Confirm new password"
+                ),
             }
         )
     )
@@ -272,14 +388,19 @@ class OrderPilotSetPasswordForm(SetPasswordForm):
 # PROFILE UPDATE
 # =========================================================
 
-class ProfileUpdateForm(forms.Form):
+class ProfileUpdateForm(
+    forms.Form,
+):
+
     first_name = forms.CharField(
         max_length=150,
         required=False,
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
-                "placeholder": "First name",
+                "placeholder": (
+                    "First name"
+                ),
             }
         ),
     )
@@ -290,7 +411,9 @@ class ProfileUpdateForm(forms.Form):
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
-                "placeholder": "Last name",
+                "placeholder": (
+                    "Last name"
+                ),
             }
         ),
     )
@@ -300,7 +423,9 @@ class ProfileUpdateForm(forms.Form):
         widget=forms.EmailInput(
             attrs={
                 "class": "form-control",
-                "placeholder": "Email address",
+                "placeholder": (
+                    "Email address"
+                ),
             }
         ),
     )
@@ -311,7 +436,9 @@ class ProfileUpdateForm(forms.Form):
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
-                "placeholder": "Phone number",
+                "placeholder": (
+                    "Phone number"
+                ),
             }
         ),
     )
@@ -320,8 +447,14 @@ class ProfileUpdateForm(forms.Form):
         required=False,
         widget=forms.FileInput(
             attrs={
-                "class": "profile-avatar-input",
-                "accept": "image/png,image/jpeg,image/webp",
+                "class": (
+                    "profile-avatar-input"
+                ),
+                "accept": (
+                    "image/png,"
+                    "image/jpeg,"
+                    "image/webp"
+                ),
             }
         ),
     )
@@ -337,57 +470,120 @@ class ProfileUpdateForm(forms.Form):
         profile=None,
         **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+
+        super().__init__(
+            *args,
+            **kwargs,
+        )
 
         self.user = user
         self.profile = profile
 
-        if user and not self.is_bound:
-            self.fields["first_name"].initial = user.first_name
-            self.fields["last_name"].initial = user.last_name
-            self.fields["email"].initial = user.email
+        if (
+            user
+            and
+            not self.is_bound
+        ):
 
-        if profile and not self.is_bound:
-            self.fields["phone"].initial = profile.phone
+            self.fields[
+                "first_name"
+            ].initial = (
+                user.first_name
+            )
 
-    def clean_email(self):
+            self.fields[
+                "last_name"
+            ].initial = (
+                user.last_name
+            )
+
+            self.fields[
+                "email"
+            ].initial = (
+                user.email
+            )
+
+        if (
+            profile
+            and
+            not self.is_bound
+        ):
+
+            self.fields[
+                "phone"
+            ].initial = (
+                profile.phone
+            )
+
+    def clean_email(
+        self,
+    ):
+
         email = (
             self.cleaned_data
-            .get("email", "")
+            .get(
+                "email",
+                "",
+            )
             .strip()
             .lower()
         )
 
         if not email:
+
             return email
 
-        queryset = User.objects.filter(
-            email__iexact=email
+        queryset = (
+            User.objects
+            .filter(
+                email__iexact=email
+            )
         )
 
         if self.user:
-            queryset = queryset.exclude(
-                pk=self.user.pk
+
+            queryset = (
+                queryset.exclude(
+                    pk=self.user.pk
+                )
             )
 
         if queryset.exists():
+
             raise forms.ValidationError(
-                "This email address is already in use."
+                (
+                    "This email address "
+                    "is already in use."
+                )
             )
 
         return email
 
-    def clean_avatar(self):
-        avatar = self.cleaned_data.get(
-            "avatar"
+    def clean_avatar(
+        self,
+    ):
+
+        avatar = (
+            self.cleaned_data
+            .get(
+                "avatar"
+            )
         )
 
         if not avatar:
+
             return avatar
 
-        if avatar.size > 2 * 1024 * 1024:
+        if (
+            avatar.size
+            > 2 * 1024 * 1024
+        ):
+
             raise forms.ValidationError(
-                "Avatar must be smaller than 2 MB."
+                (
+                    "Avatar must be "
+                    "smaller than 2 MB."
+                )
             )
 
         allowed_types = {
@@ -402,29 +598,45 @@ class ProfileUpdateForm(forms.Form):
             "",
         )
 
-        if content_type not in allowed_types:
+        if (
+            content_type
+            not in allowed_types
+        ):
+
             raise forms.ValidationError(
-                "Please upload a JPG, PNG, or WebP image."
+                (
+                    "Please upload a JPG, "
+                    "PNG, or WebP image."
+                )
             )
 
         return avatar
 
-    def save(self):
+    def save(
+        self,
+    ):
+
         user = self.user
         profile = self.profile
 
         user.first_name = (
-            self.cleaned_data["first_name"]
+            self.cleaned_data[
+                "first_name"
+            ]
             .strip()
         )
 
         user.last_name = (
-            self.cleaned_data["last_name"]
+            self.cleaned_data[
+                "last_name"
+            ]
             .strip()
         )
 
         user.email = (
-            self.cleaned_data["email"]
+            self.cleaned_data[
+                "email"
+            ]
             .strip()
             .lower()
         )
@@ -438,14 +650,21 @@ class ProfileUpdateForm(forms.Form):
         )
 
         profile.phone = (
-            self.cleaned_data["phone"]
+            self.cleaned_data[
+                "phone"
+            ]
             .strip()
         )
 
-        if self.cleaned_data.get(
-            "remove_avatar"
+        if (
+            self.cleaned_data
+            .get(
+                "remove_avatar"
+            )
         ):
+
             if profile.avatar:
+
                 profile.avatar.delete(
                     save=False
                 )
@@ -454,17 +673,26 @@ class ProfileUpdateForm(forms.Form):
 
         new_avatar = (
             self.cleaned_data
-            .get("avatar")
+            .get(
+                "avatar"
+            )
         )
 
         if new_avatar:
+
             if profile.avatar:
+
                 profile.avatar.delete(
                     save=False
                 )
 
-            profile.avatar = new_avatar
+            profile.avatar = (
+                new_avatar
+            )
 
         profile.save()
 
-        return user, profile
+        return (
+            user,
+            profile,
+        )

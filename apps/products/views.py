@@ -342,6 +342,7 @@ def product_create(request):
 
 
 @login_required
+@management_required
 def product_update(
     request,
     pk,

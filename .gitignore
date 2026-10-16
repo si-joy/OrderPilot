@@ -17,5 +17,4 @@ staticfiles/
 *.log
 .DS_Store
 
-orderpilot_backup.dump
 *.dump

@@ -465,21 +465,6 @@ class AuthSecurityTests(TestCase):
         )
 
 
-    def test_components_demo_requires_login(
-        self,
-    ):
-
-        response = self.client.get(
-            reverse(
-                "core:components_demo"
-            )
-        )
-
-        self.assertEqual(
-            response.status_code,
-            302,
-        )
-
     # =========================================================
     # LOGOUT
     # =========================================================
